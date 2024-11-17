@@ -1,0 +1,7 @@
+flask==2.3.2
+torch>=2.1.0
+numpy==1.24.3
+llama-cpp-python>=0.2.56
+flask-socketio==5.3.6
+accelerate==0.27.2
+optimum>=1.16.1

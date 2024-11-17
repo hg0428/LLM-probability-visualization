@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Token Explorer</title>
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jetbrains-mono@1.0.6/css/jetbrains-mono.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="main-content">
+            <div id="chat-display" class="chat-display"></div>
+            
+            <div class="input-area">
+                <textarea id="prompt" placeholder="Enter your message..."></textarea>
+                <button id="send-button">Send</button>
+            </div>
+        </div>
+
+        <div class="settings-container">
+            <div class="settings-handle">
+                <button id="toggle-settings" class="toggle-settings">
+                    <i class="fas fa-cog"></i>
+                </button>
+                <div class="drag-handle"></div>
+            </div>
+            <div class="settings-panel">
+                <h3 title="Model selection affects the overall behavior and output of the language model">Model Settings</h3>
+                <div class="settings-group">
+                    <div class="setting">
+                        <label for="model-select" title="Select the language model to use for text generation. Different models have different capabilities, strengths, and performance characteristics.">Model:</label>
+                        <select id="model-select">
+                            {% for model in models %}
+                            <option value="{{ model }}">{{ model }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="settings-group-header">
+                    <h3 title="Controls that affect the randomness and creativity of the model's output">Randomness</h3>
+                    <label class="toggle-switch" title="Enable/disable randomness controls">
+                        <input type="checkbox" id="toggle-randomness" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="settings-group" id="randomness-group">
+                    <div class="setting">
+                        <label for="temperature-value" title="Controls randomness in the output. Higher values (e.g., 0.8) make the output more creative but less predictable, lower values (e.g., 0.2) make it more focused and deterministic.">Temperature:</label>
+                        <input type="number" id="temperature-value" value="0.7" min="0" max="10" step="0.1">
+                        <span class="setting-hint">(0.0-10.0: higher = more random)</span>
+                    </div>
+                    <div class="setting">
+                        <label for="top-p-value" title="Nucleus sampling: Only consider tokens whose cumulative probability exceeds this value. Lower values make output more focused, higher values allow more variety.">Top P:</label>
+                        <input type="number" id="top-p-value" value="1" step="0.1" min="0" max="1">
+                        <span class="setting-hint">(0-1: lower = more focused)</span>
+                    </div>
+                    <div class="setting">
+                        <label for="min-p-value" title="Minimum probability threshold: Excludes tokens below this probability. Higher values ensure only high-confidence tokens are used.">Min P:</label>
+                        <input type="number" id="min-p-value" value="0" min="0" max="1" step="0.1">
+                        <span class="setting-hint">(0-1: higher = more conservative)</span>
+                    </div>
+                    <div class="setting">
+                        <label for="top-k-value" title="Limits the number of highest probability tokens to consider. Lower values make output more focused, higher values allow more variety.">Top K:</label>
+                        <input type="number" id="top-k-value" value="0" min="0">
+                        <span class="setting-hint">(0-∞: lower = more focused)</span>
+                    </div>
+                </div>
+
+                <div class="settings-group-header">
+                    <h3 title="Controls that prevent repetitive or redundant text in the output">Penalties</h3>
+                    <label class="toggle-switch" title="Enable/disable penalty controls">
+                        <input type="checkbox" id="toggle-penalties" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="settings-group" id="penalties-group">
+                    <div class="setting">
+                        <label for="repetition-penalty-value" title="Penalizes tokens that have appeared recently. Higher values reduce exact repetition but may affect fluency.">Repetition:</label>
+                        <input type="number" id="repetition-penalty-value" value="1.0" step="0.1" min="1.0" max="2.0">
+                        <span class="setting-hint">(1.0-2.0: higher = less repetition)</span>
+                    </div>
+                    <div class="setting">
+                        <label for="frequency-penalty-value" title="Penalizes tokens based on their frequency in the generated text. Higher values discourage repetition of the same tokens.">Frequency Penalty:</label>
+                        <input type="number" id="frequency-penalty-value" value="0" min="0" max="2" step="0.1">
+                        <span class="setting-hint">(0-2: higher = less repetition)</span>
+                    </div>
+                    <div class="setting">
+                        <label for="presence-penalty-value" title="Penalizes tokens based on their presence in the generated text. Higher values discourage reuse of any token that has appeared before.">Presence Penalty:</label>
+                        <input type="number" id="presence-penalty-value" value="0" min="-2" max="2" step="0.1">
+                        <span class="setting-hint">(-2 to 2: higher = less reuse)</span>
+                    </div>
+                    <div class="setting">
+                        <label for="repeat-last-n-value" title="Number of previous tokens to consider for repetition penalty. Higher values look further back to prevent repetition.">Repeat Last N:</label>
+                        <input type="number" id="repeat-last-n-value" value="64" step="1" min="0">
+                        <span class="setting-hint">(tokens to check for repetition)</span>
+                    </div>
+                </div>
+
+                <div class="settings-group-header">
+                    <h3 title="Advanced controls to prevent redundant patterns in the output">DRY (Don't Repeat Yourself)</h3>
+                    <label class="toggle-switch" title="Enable/disable DRY controls">
+                        <input type="checkbox" id="toggle-dry" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="settings-group" id="dry-group">
+                    <div class="setting">
+                        <label for="dry-allowed-length" title="Maximum length of repeated sequences allowed before applying penalties. Higher values allow longer repeated phrases.">Allowed Length:</label>
+                        <input type="number" id="dry-allowed-length" value="2" step="1" min="0">
+                        <span class="setting-hint">(max allowed repeat length)</span>
+                    </div>
+                    <div class="setting">
+                        <label for="dry-base" title="Base value for exponential penalty calculation. Higher values create stronger penalties for longer repetitions.">Base:</label>
+                        <input type="number" id="dry-base" value="1.2" step="0.1" min="0">
+                        <span class="setting-hint">(exponential penalty base)</span>
+                    </div>
+                    <div class="setting">
+                        <label for="dry-multiplier" title="Multiplier for the penalty calculation. Higher values create stronger overall penalties for repetition.">Multiplier:</label>
+                        <input type="number" id="dry-multiplier" value="2" step="0.1" min="0">
+                        <span class="setting-hint">(strength of penalty)</span>
+                    </div>
+                    <div class="setting">
+                        <label for="dry-range" title="Number of previous tokens to check for repetitive patterns. Higher values look further back but may impact performance.">Range:</label>
+                        <input type="number" id="dry-range" value="512" step="1" min="0">
+                        <span class="setting-hint">(context window to check)</span>
+                    </div>
+                </div>
+
+                <h3 title="Controls for managing token generation">Token Control</h3>
+                <div class="settings-group">
+                    <div class="setting">
+                        <label for="max-new-tokens-value" title="Maximum number of tokens to generate. Set to 0 for unlimited tokens.">Max Tokens:</label>
+                        <input type="number" id="max-new-tokens-value" value="100" min="0">
+                        <span class="setting-hint">(0 = unlimited)</span>
+                    </div>
+                    <div class="setting">
+                        <label for="num-show-value" title="Number of alternative tokens to display when clicking on a generated token.">Show Top N:</label>
+                        <input type="number" id="num-show-value" value="12" min="1" max="50">
+                        <span class="setting-hint">(alternatives per token)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Token Options Modal -->
+    <div id="token-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Token Alternatives</h3>
+                <span class="close" onclick="closeTokenModal()">&times;</span>
+            </div>
+            <div id="token-options" class="token-options"></div>
+        </div>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
