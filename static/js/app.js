@@ -109,6 +109,19 @@ document.addEventListener("DOMContentLoaded", () => {
 		chatSidebarButton.classList.add("active");
 		completionSidebarButton.classList.remove("active");
 	});
+
+	// Stop button click
+	const stopButton = document.getElementById("stop-button");
+	stopButton.addEventListener("click", () => {
+		socket.emit("stop");
+	});
+
+	const stopButtonCompletion = document.getElementById(
+		"stop-button-completion"
+	);
+	stopButtonCompletion.addEventListener("click", () => {
+		socket.emit("stop");
+	});
 });
 
 function setupSettingsToggle(groupName) {
@@ -355,7 +368,7 @@ function showTokenOptions(message, position) {
 
 	const modal = document.getElementById("token-modal");
 	const modalContent = document.getElementById("token-options");
-	modalContent.innerHTML = "";
+	modalContent.innerHTML = ``;
 
 	// Sort alternatives by probability
 	alternatives
@@ -396,7 +409,7 @@ function showTokenOptionsCompletion(token_id, tokenSpan) {
 
 	const modal = document.getElementById("token-modal");
 	const modalContent = document.getElementById("token-options");
-	modalContent.innerHTML = "";
+	modalContent.innerHTML = ``;
 
 	// Sort alternatives by probability
 	alternatives
@@ -424,6 +437,7 @@ function showTokenOptionsCompletion(token_id, tokenSpan) {
 			optionDiv.onclick = () => {
 				console.log("Option clicked:", token, tokenSpan);
 				tokenSpan.textContent = token;
+				tokenSpan.style.backgroundColor = probColor;
 				// Remove all elements after the target element
 				let nextElement = tokenSpan.nextElementSibling;
 				while (nextElement) {
@@ -515,7 +529,7 @@ function initializeWebSocket() {
 						completionDisplay.appendChild(br);
 					}
 					const tokenSpan = document.createElement("span");
-					tokenSpan.textContent = chosen;
+					tokenSpan.textContent = token;
 					tokenSpan.className = "token";
 					tokenSpan.setAttribute("data-token-id", token_id);
 					// Add click handler

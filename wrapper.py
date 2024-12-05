@@ -18,7 +18,7 @@ class LlamaTokenizerWrapper:
 
 
 class LlamaWrapper:
-    def __init__(self, model_path: str, n_gpu_layers: int = 1, n_ctx: int = 2048):
+    def __init__(self, model_path: str, n_gpu_layers: int = -1, n_ctx: int = 2048):
         self.model = Llama(
             model_path=model_path,
             n_gpu_layers=n_gpu_layers,
