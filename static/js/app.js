@@ -60,10 +60,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	// Settings panel functionality
 	const settingsContainer = document.querySelector(".settings-container");
 	const resizeHandle = document.querySelector(".resize-handle");
-	const toggleSettingsButtons = [
-		document.getElementById("toggle-settings"),
-		document.getElementById("toggle-settings-completion"),
-	];
+	const toggleSettingsButtons = [document.getElementById("toggle-settings")];
 
 	const SETTINGS_MIN_WIDTH = 300;
 	const SETTINGS_MAX_WIDTH = 600;
@@ -91,9 +88,9 @@ document.addEventListener("DOMContentLoaded", () => {
 		}, 200); // Match the CSS transition duration
 	}
 
-	toggleSettingsButtons.forEach((button) => {
-		button.addEventListener("click", () => toggleSettings());
-	});
+	document
+		.getElementById("toggle-settings")
+		.addEventListener("click", () => toggleSettings());
 
 	// Resize functionality
 	let isResizing = false;
@@ -214,26 +211,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	// Initialize highlight toggle
 	const highlightToggle = document.getElementById("highlight-toggle");
-	const highlightToggleCompletion = document.getElementById(
-		"highlight-toggle-completion"
-	);
 
 	// Chat mode toggle
 	highlightToggle.addEventListener("change", (e) => {
 		if (e.target.checked) {
 			chatDisplay.classList.remove("highlights-disabled");
-		} else {
-			chatDisplay.classList.add("highlights-disabled");
-		}
-		// Save preference
-		localStorage.setItem("highlightsEnabled", e.target.checked);
-	});
-
-	// Completion mode toggle
-	highlightToggleCompletion.addEventListener("change", (e) => {
-		if (e.target.checked) {
 			completionDisplay.classList.remove("highlights-disabled");
 		} else {
+			chatDisplay.classList.add("highlights-disabled");
 			completionDisplay.classList.add("highlights-disabled");
 		}
 		// Save preference
@@ -244,11 +229,8 @@ document.addEventListener("DOMContentLoaded", () => {
 	const highlightsEnabled = localStorage.getItem("highlightsEnabled");
 	if (highlightsEnabled !== null) {
 		highlightToggle.checked = highlightsEnabled === "true";
-		highlightToggleCompletion.checked = highlightsEnabled === "true";
 		if (!highlightToggle.checked) {
 			chatDisplay.classList.add("highlights-disabled");
-		}
-		if (!highlightToggleCompletion.checked) {
 			completionDisplay.classList.add("highlights-disabled");
 		}
 	}
@@ -403,9 +385,6 @@ async function generateResponse(
 	prompt = null,
 	mode = "chat"
 ) {
-	// Reset TPS when starting a new generation
-	resetTPS();
-
 	const settings = getSettings();
 	socket.emit("generate", {
 		chat_history,
@@ -420,6 +399,7 @@ async function generateChat() {
 	const prompt = document.getElementById("prompt").value;
 	document.getElementById("prompt").value = "";
 	if (!prompt.trim()) return;
+	tokenStartTime = null;
 
 	// Add user message to chat history
 	chatHistory.push({ role: "user", content: prompt });
@@ -438,6 +418,7 @@ async function generateChat() {
 	await generateResponse(chatHistory, null, "chat");
 }
 async function generateCompletion() {
+	tokenStartTime = null;
 	await generateResponse(null, completionDisplay.textContent, "completion");
 }
 
@@ -709,16 +690,6 @@ function updateTPS() {
 	}
 }
 
-function resetTPS() {
-	tokenStartTime = null;
-	tokenCount = 0;
-	currentTPS = 0;
-	if (tpsUpdateInterval) {
-		clearInterval(tpsUpdateInterval);
-		tpsUpdateInterval = null;
-	}
-}
-
 function initializeWebSocket() {
 	socket = io();
 
@@ -733,16 +704,14 @@ function initializeWebSocket() {
 	socket.on("error", (data) => {
 		console.error("Server error:", data.message);
 		alert(`Error generating response: ${data.message}`);
-		resetTPS();
 	});
 
 	socket.on("token", (data) => {
 		// Start tracking TPS when first token arrives
+		updateTPS();
 		if (!tokenStartTime) {
 			tokenStartTime = Date.now();
 			tokenCount = 0;
-			// Start updating TPS display every 100ms
-			tpsUpdateInterval = setInterval(updateTPS, 100);
 		}
 		tokenCount++;
 

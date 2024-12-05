@@ -39,27 +39,27 @@
 					<span>Completion</span>
 				</button>
 			</div>
+			<main>
+			<div class="status-bar">
+				<div class="status-bar-left">
+					<div id="tps-indicator" class="tps-indicator">0.0 tokens/sec</div>
+					<div class="status-divider"></div>
+					<label class="toggle-switch">
+						<input type="checkbox" id="highlight-toggle" checked />
+						<span class="toggle-slider"></span>
+						<span class="toggle-label">Token Highlights</span>
+					</label>
+				</div>
+				<div class="status-bar-right">
+					<button id="toggle-settings" class="settings-button">
+						<i class="fas fa-cog"></i>
+					</button>
+				</div>
+			</div>
 			<div class="main-chat-content">
 				<div class="chat-container">
-					<div class="status-bar">
-						<div class="status-bar-left">
-							<div id="tps-indicator" class="tps-indicator">0.0 tokens/sec</div>
-							<div class="status-divider"></div>
-							<label class="toggle-switch">
-								<input type="checkbox" id="highlight-toggle" checked />
-								<span class="toggle-slider"></span>
-								<span class="toggle-label">Token Highlights</span>
-							</label>
-						</div>
-						<div class="status-bar-right">
-							<button id="toggle-settings" class="settings-button">
-								<i class="fas fa-cog"></i>
-							</button>
-						</div>
-					</div>
 					<div id="chat-display" class="chat-display"></div>
 				</div>
-
 				<div class="input-area">
 					<textarea id="prompt" placeholder="Enter your message..."></textarea>
 					<button id="send-button">Send</button>
@@ -68,22 +68,6 @@
 			</div>
 			<div class="main-completion-content">
 				<div class="completion-container">
-					<div class="status-bar">
-						<div class="status-bar-left">
-							<div id="tps-indicator-completion" class="tps-indicator">0.0 tokens/sec</div>
-							<div class="status-divider"></div>
-							<label class="toggle-switch">
-								<input type="checkbox" id="highlight-toggle-completion" checked />
-								<span class="toggle-slider"></span>
-								<span class="toggle-label">Token Highlights</span>
-							</label>
-						</div>
-						<div class="status-bar-right">
-							<button id="toggle-settings-completion" class="settings-button">
-								<i class="fas fa-cog"></i>
-							</button>
-						</div>
-					</div>
 					<div id="completion-display" class="completion-display" contenteditable="true"></div>
 				</div>
 				<div class="input-area">
@@ -91,6 +75,7 @@
 					<button id="stop-button-completion">Stop</button>
 				</div>
 			</div>
+			</main>
 
 			<div class="settings-container">
 				<div class="resize-handle"></div>
@@ -98,7 +83,7 @@
 					<h3
 						title="Model selection affects the overall behavior and output of the language model"
 					>
-						Model Settings
+						Model
 					</h3>
 					<div class="settings-group">
 						<div class="setting">
