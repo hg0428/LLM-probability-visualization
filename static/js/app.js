@@ -10,6 +10,12 @@ let initialWidth;
 let initialX;
 let socket = null;
 let currentMessageDiv = null;
+let completionDisplay = null;
+let mode = "chat";
+let mainChatContent, mainCompletionContent;
+let chatSidebarButton, completionSidebarButton;
+let completeButton;
+let completionTokenOptions = {};
 
 // Event Listeners
 document.addEventListener("DOMContentLoaded", () => {
@@ -17,15 +23,24 @@ document.addEventListener("DOMContentLoaded", () => {
 	// Send button click
 	document
 		.getElementById("send-button")
-		.addEventListener("click", generateText);
+		.addEventListener("click", generateChat);
 	modelSelect = document.getElementById("model-select");
 	chatDisplay = document.getElementById("chat-display");
+	completionDisplay = document.getElementById("completion-display");
+	mainChatContent = document.querySelector(".main-chat-content");
+	mainCompletionContent = document.querySelector(".main-completion-content");
+	chatSidebarButton = document.getElementById("chat-sidebar-button");
+	completionSidebarButton = document.getElementById(
+		"completion-sidebar-button"
+	);
+	completeButton = document.getElementById("complete-button");
+	completeButton.addEventListener("click", generateCompletion);
 
 	// Enter key in textarea
 	document.getElementById("prompt").addEventListener("keypress", (e) => {
 		if (e.key === "Enter" && !e.shiftKey) {
 			e.preventDefault();
-			generateText();
+			generateChat();
 		}
 	});
 
@@ -78,6 +93,22 @@ document.addEventListener("DOMContentLoaded", () => {
 	setupSettingsToggle("xtc");
 	setupSettingsToggle("penalties");
 	setupSettingsToggle("dry");
+
+	completionSidebarButton.addEventListener("click", (e) => {
+		mode = "completion";
+		mainChatContent.style.display = "none";
+		mainCompletionContent.style.display = "flex";
+		chatSidebarButton.classList.remove("active");
+		completionSidebarButton.classList.add("active");
+	});
+
+	chatSidebarButton.addEventListener("click", (e) => {
+		mode = "chat";
+		mainChatContent.style.display = "flex";
+		mainCompletionContent.style.display = "none";
+		chatSidebarButton.classList.add("active");
+		completionSidebarButton.classList.remove("active");
+	});
 });
 
 function setupSettingsToggle(groupName) {
@@ -224,16 +255,22 @@ function getSettings() {
 	};
 }
 
-async function generateResponse(chat_history) {
+async function generateResponse(
+	chat_history = null,
+	prompt = null,
+	mode = "chat"
+) {
 	socket.emit("stop");
 	socket.emit("generate", {
 		chat_history: chat_history,
+		prompt: prompt,
+		mode,
 		...getSettings(),
 	});
 }
 
 // Text Generation
-async function generateText() {
+async function generateChat() {
 	const prompt = document.getElementById("prompt").value;
 	document.getElementById("prompt").value = "";
 	if (!prompt.trim()) return;
@@ -252,7 +289,10 @@ async function generateText() {
 	});
 	updateChatDisplay();
 
-	await generateResponse(chatHistory);
+	await generateResponse(chatHistory, null, "chat");
+}
+async function generateCompletion() {
+	await generateResponse(null, completionDisplay.textContent, "completion");
 }
 
 // Chat Display
@@ -350,6 +390,56 @@ function showTokenOptions(message, position) {
 
 	modal.style.display = "block";
 }
+function showTokenOptionsCompletion(token_id, tokenSpan) {
+	const alternatives = completionTokenOptions[token_id];
+	if (!alternatives) return;
+
+	const modal = document.getElementById("token-modal");
+	const modalContent = document.getElementById("token-options");
+	modalContent.innerHTML = "";
+
+	// Sort alternatives by probability
+	alternatives
+		.sort((a, b) => b[1] - a[1]) // Sort by probability (descending)
+		.forEach(([token, prob, isChosen]) => {
+			const optionDiv = document.createElement("div");
+			optionDiv.className = `token-option ${isChosen ? "chosen" : ""}`;
+
+			const tokenOptionSpan = document.createElement("span");
+			tokenOptionSpan.className = "token-text";
+			tokenOptionSpan.textContent = token;
+
+			const probSpan = document.createElement("span");
+			probSpan.className = "token-prob";
+			probSpan.textContent = (prob * 100).toFixed(2) + "%";
+
+			// Add probability-based highlighting
+			const probColor = getProbabilityColor(prob);
+			optionDiv.style.borderLeft = `4px solid ${probColor}`;
+
+			optionDiv.appendChild(tokenOptionSpan);
+			optionDiv.appendChild(probSpan);
+
+			// Add click handler for token replacement
+			optionDiv.onclick = () => {
+				console.log("Option clicked:", token, tokenSpan);
+				tokenSpan.textContent = token;
+				// Remove all elements after the target element
+				let nextElement = tokenSpan.nextElementSibling;
+				while (nextElement) {
+					const next = nextElement.nextElementSibling;
+					nextElement.remove();
+					nextElement = next;
+				}
+				generateCompletion();
+				closeTokenModal();
+			};
+
+			modalContent.appendChild(optionDiv);
+		});
+
+	modal.style.display = "block";
+}
 
 function closeTokenModal() {
 	const modal = document.getElementById("token-modal");
@@ -403,7 +493,7 @@ function initializeWebSocket() {
 
 	socket.on("token", (data) => {
 		console.log("Received token:", data);
-		if (!currentMessageDiv) {
+		if (data.mode === "chat" && !currentMessageDiv) {
 			currentMessageDiv = document.createElement("div");
 			currentMessageDiv.className = "message assistant";
 			chatDisplay.appendChild(currentMessageDiv);
@@ -411,7 +501,32 @@ function initializeWebSocket() {
 
 		const { chosen, options, message_id, token_id } = data;
 		if (options && options.length > 0) {
-			if (chatHistory[chatHistory.length - 1].partial) {
+			if (data.mode === "completion") {
+				// Generate long random unique id.
+				let token_id = Math.floor(Math.random() * 1000000000);
+				completionTokenOptions[token_id] = options;
+				const chosenToken = options.find(([_, __, isChosen]) => isChosen);
+				const [token, prob, _] = chosenToken;
+				const probColor = getProbabilityColor(prob);
+				let i = 0;
+				token.split("\n").map((token) => {
+					if (i > 0) {
+						const br = document.createElement("br");
+						completionDisplay.appendChild(br);
+					}
+					const tokenSpan = document.createElement("span");
+					tokenSpan.textContent = chosen;
+					tokenSpan.className = "token";
+					tokenSpan.setAttribute("data-token-id", token_id);
+					// Add click handler
+					tokenSpan.onclick = () =>
+						showTokenOptionsCompletion(token_id, tokenSpan);
+					// Add probability-based highlighting
+					tokenSpan.style.backgroundColor = probColor;
+					completionDisplay.appendChild(tokenSpan);
+					i++;
+				});
+			} else if (chatHistory[chatHistory.length - 1].partial) {
 				chatHistory[chatHistory.length - 1].content += chosen;
 				chatHistory[chatHistory.length - 1].chosenTokens.push(chosen);
 				chatHistory[chatHistory.length - 1].tokenSequence.push(options);
@@ -429,7 +544,7 @@ function initializeWebSocket() {
 		}
 	});
 	socket.on("end", () => {
-		if (chatHistory[chatHistory.length - 1].partial) {
+		if (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].partial) {
 			chatHistory[chatHistory.length - 1].partial = false;
 		}
 		console.log("end");

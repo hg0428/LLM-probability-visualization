@@ -21,12 +21,40 @@
 	</head>
 	<body>
 		<div class="container">
-			<div class="main-content">
+			<div class="mode-sidebar">
+				<button
+					class="mode-button active"
+					data-mode="chat"
+					id="chat-sidebar-button"
+				>
+					<i class="fas fa-comments"></i>
+					<span>Chat</span>
+				</button>
+				<button
+					class="mode-button"
+					data-mode="completion"
+					id="completion-sidebar-button"
+				>
+					<i class="fas fa-terminal"></i>
+					<span>Completion</span>
+				</button>
+			</div>
+			<div class="main-chat-content">
 				<div id="chat-display" class="chat-display"></div>
 
 				<div class="input-area">
 					<textarea id="prompt" placeholder="Enter your message..."></textarea>
 					<button id="send-button">Send</button>
+				</div>
+			</div>
+			<div class="main-completion-content">
+				<div
+					id="completion-display"
+					class="completion-display"
+					contenteditable="true"
+				></div>
+				<div class="input-area">
+					<button id="complete-button">Complete</button>
 				</div>
 			</div>
 
@@ -81,7 +109,7 @@
 							<input
 								type="number"
 								id="temperature-value"
-								value="0.7"
+								value="1.0"
 								min="0"
 								max="10"
 								step="0.1"

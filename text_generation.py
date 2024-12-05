@@ -237,7 +237,17 @@ def generate_text(
                 alternatives.append(
                     [token, float(prob.item()), idx.item() == next_token.item()]
                 )
-            yield model.detokenize([next_token.item()]), alternatives
+            chosen_token_detokenized = model.detokenize([next_token.item()])
+            alternatives.append(
+                [chosen_token_detokenized, probs[0][next_token.item()], True]
+            )
+            # Remove duplicates
+            alternatives = [
+                alt
+                for i, alt in enumerate(alternatives)
+                if alt[0] not in [a[0] for a in alternatives[:i]]
+            ]
+            yield chosen_token_detokenized, alternatives
             if alternatives:
                 sequence_alternatives.append(alternatives)
             # Update token frequencies

@@ -116,7 +116,7 @@ def handle_disconnect():
 def handle_generate(data):
     generation_id = uuid4()
     session["generating"] = generation_id
-    chat_history = data.get("chat_history", [])
+    mode = data.get("mode", "chat")
     model_name = data.get("model_name", "Qwen2.5-0.5B")
     top_k = data.get("top_k", 0)
     num_show = data.get("num_show", 12)
@@ -144,12 +144,16 @@ def handle_generate(data):
         model, tokenizer = get_model_and_tokenizer(model_name)
 
         # Format chat history
-        formatted_prompt = format_chat_history(chat_history, model, model_name)
+        if mode == "chat":
+            chat_history = data.get("chat_history", [])
+            prompt = format_chat_history(chat_history, model, model_name)
+        else:
+            prompt = data.get("prompt", "")
         n = 0
         # Generate text with alternatives
         for token, alternatives in generate_text(
             model,
-            formatted_prompt,
+            prompt,
             max_new_tokens,
             top_k,
             temperature,
@@ -179,8 +183,9 @@ def handle_generate(data):
                 {
                     "chosen": token,
                     "options": [[t, float(p), bool(c)] for t, p, c in alternatives],
-                    "message_id": len(chat_history) - 1,
+                    "message_id": len(chat_history) - 1 if mode == "chat" else None,
                     "token_id": n,
+                    "mode": mode,
                 },
             )
             n += 1
