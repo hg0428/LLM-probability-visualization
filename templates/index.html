@@ -40,7 +40,25 @@
 				</button>
 			</div>
 			<div class="main-chat-content">
-				<div id="chat-display" class="chat-display"></div>
+				<div class="chat-container">
+					<div class="status-bar">
+						<div class="status-bar-left">
+							<div id="tps-indicator" class="tps-indicator">0.0 tokens/sec</div>
+							<div class="status-divider"></div>
+							<label class="toggle-switch">
+								<input type="checkbox" id="highlight-toggle" checked />
+								<span class="toggle-slider"></span>
+								<span class="toggle-label">Token Highlights</span>
+							</label>
+						</div>
+						<div class="status-bar-right">
+							<button id="toggle-settings" class="settings-button">
+								<i class="fas fa-cog"></i>
+							</button>
+						</div>
+					</div>
+					<div id="chat-display" class="chat-display"></div>
+				</div>
 
 				<div class="input-area">
 					<textarea id="prompt" placeholder="Enter your message..."></textarea>
@@ -49,11 +67,25 @@
 				</div>
 			</div>
 			<div class="main-completion-content">
-				<div
-					id="completion-display"
-					class="completion-display"
-					contenteditable="true"
-				></div>
+				<div class="completion-container">
+					<div class="status-bar">
+						<div class="status-bar-left">
+							<div id="tps-indicator-completion" class="tps-indicator">0.0 tokens/sec</div>
+							<div class="status-divider"></div>
+							<label class="toggle-switch">
+								<input type="checkbox" id="highlight-toggle-completion" checked />
+								<span class="toggle-slider"></span>
+								<span class="toggle-label">Token Highlights</span>
+							</label>
+						</div>
+						<div class="status-bar-right">
+							<button id="toggle-settings-completion" class="settings-button">
+								<i class="fas fa-cog"></i>
+							</button>
+						</div>
+					</div>
+					<div id="completion-display" class="completion-display" contenteditable="true"></div>
+				</div>
 				<div class="input-area">
 					<button id="complete-button">Complete</button>
 					<button id="stop-button-completion">Stop</button>
@@ -61,12 +93,7 @@
 			</div>
 
 			<div class="settings-container">
-				<div class="settings-handle">
-					<button id="toggle-settings" class="toggle-settings">
-						<i class="fas fa-cog"></i>
-					</button>
-					<div class="drag-handle"></div>
-				</div>
+				<div class="resize-handle"></div>
 				<div class="settings-panel">
 					<h3
 						title="Model selection affects the overall behavior and output of the language model"
@@ -415,19 +442,18 @@
 					</div>
 				</div>
 			</div>
-		</div>
 
-		<!-- Token Options Modal -->
-		<div id="token-modal" class="modal">
-			<div class="modal-content">
-				<div class="modal-header">
-					<h3>Token Alternatives</h3>
-					<span class="close" onclick="closeTokenModal()">&times;</span>
+			<!-- Token Options Modal -->
+			<div id="token-modal" class="modal">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h3>Token Alternatives</h3>
+						<span class="close" onclick="closeTokenModal()">&times;</span>
+					</div>
+					<div id="token-options" class="token-options"></div>
 				</div>
-				<div id="token-options" class="token-options"></div>
 			</div>
-		</div>
 
-		<script src="{{ url_for('static', filename='js/app.js') }}"></script>
-	</body>
-</html>
+			<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+		</body>
+	</html>

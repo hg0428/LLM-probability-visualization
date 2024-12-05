@@ -4,7 +4,8 @@ let lastTokenSequence = null;
 let lastResponseTokens = [];
 let lastResponseProbs = [];
 let selectedPosition = null;
-let modelSelect, chatDisplay;
+let modelSelect = null;
+let chatDisplay = null;
 let isResizing = false;
 let initialWidth;
 let initialX;
@@ -16,6 +17,10 @@ let mainChatContent, mainCompletionContent;
 let chatSidebarButton, completionSidebarButton;
 let completeButton;
 let completionTokenOptions = {};
+let tokenStartTime = null;
+let tokenCount = 0;
+let tpsUpdateInterval = null;
+let currentTPS = 0;
 
 // Event Listeners
 document.addEventListener("DOMContentLoaded", () => {
@@ -54,36 +59,120 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	// Settings panel functionality
 	const settingsContainer = document.querySelector(".settings-container");
-	const toggleButton = document.getElementById("toggle-settings");
-	const dragHandle = document.querySelector(".drag-handle");
+	const resizeHandle = document.querySelector(".resize-handle");
+	const toggleSettingsButtons = [
+		document.getElementById("toggle-settings"),
+		document.getElementById("toggle-settings-completion"),
+	];
+
+	const SETTINGS_MIN_WIDTH = 300;
+	const SETTINGS_MAX_WIDTH = 600;
+	const SETTINGS_SNAP_THRESHOLD = 200; // Width below which panel snaps closed
 
 	// Toggle settings panel
-	toggleButton.addEventListener("click", () => {
-		settingsContainer.classList.toggle("closed");
+	function toggleSettings(forceState) {
+		settingsContainer.classList.add("animating");
+
+		if (typeof forceState === "boolean") {
+			settingsContainer.classList.toggle("closed", !forceState);
+		} else {
+			settingsContainer.classList.toggle("closed");
+		}
+
 		if (settingsContainer.classList.contains("closed")) {
 			settingsContainer.style.width = "0";
 		} else {
-			settingsContainer.style.width = "300px";
+			settingsContainer.style.width = `${SETTINGS_MIN_WIDTH}px`;
 		}
+
+		// Remove animation class after transition completes
+		setTimeout(() => {
+			settingsContainer.classList.remove("animating");
+		}, 200); // Match the CSS transition duration
+	}
+
+	toggleSettingsButtons.forEach((button) => {
+		button.addEventListener("click", () => toggleSettings());
 	});
 
 	// Resize functionality
-	dragHandle.addEventListener("mousedown", (e) => {
+	let isResizing = false;
+	let initialX;
+	let currentWidth;
+	let rafId = null;
+
+	function updateWidth() {
+		if (!isResizing) return;
+		settingsContainer.style.width = `${currentWidth}px`;
+		rafId = requestAnimationFrame(updateWidth);
+	}
+
+	resizeHandle.addEventListener("mousedown", (e) => {
+		e.preventDefault();
 		isResizing = true;
-		initialWidth = settingsContainer.offsetWidth;
+		const wasClosed = settingsContainer.classList.contains("closed");
+
+		// Remove closed state if we're opening
+		if (wasClosed) {
+			settingsContainer.classList.remove("closed", "animating");
+			settingsContainer.style.width = "0px";
+			currentWidth = 0;
+		} else {
+			currentWidth = settingsContainer.offsetWidth;
+		}
+
 		initialX = e.clientX;
 
+		// Start the animation frame loop
+		rafId = requestAnimationFrame(updateWidth);
+
 		document.addEventListener("mousemove", handleMouseMove);
-		document.addEventListener("mouseup", () => {
-			isResizing = false;
-			document.removeEventListener("mousemove", handleMouseMove);
-		});
+		document.addEventListener("mouseup", handleMouseUp);
 	});
+
+	function handleMouseMove(e) {
+		if (!isResizing) return;
+		const delta = e.clientX - initialX;
+
+		// Always calculate width based on drag direction
+		const newWidth = currentWidth - delta;
+		currentWidth = Math.max(0, Math.min(SETTINGS_MAX_WIDTH, newWidth));
+		initialX = e.clientX;
+	}
+
+	function handleMouseUp() {
+		isResizing = false;
+		document.removeEventListener("mousemove", handleMouseMove);
+		document.removeEventListener("mouseup", handleMouseUp);
+
+		// Cancel the animation frame
+		if (rafId !== null) {
+			cancelAnimationFrame(rafId);
+			rafId = null;
+		}
+
+		// Add animation class for snapping
+		settingsContainer.classList.add("animating");
+
+		// Snap behavior
+		if (currentWidth < SETTINGS_SNAP_THRESHOLD) {
+			toggleSettings(false); // Close
+		} else if (currentWidth < SETTINGS_MIN_WIDTH) {
+			settingsContainer.style.width = `${SETTINGS_MIN_WIDTH}px`;
+		}
+
+		// Remove animation class after snap completes
+		setTimeout(() => {
+			settingsContainer.classList.remove("animating");
+		}, 200);
+	}
 
 	// Handle mobile toggle
 	if (window.innerWidth <= 768) {
-		toggleButton.addEventListener("click", () => {
-			settingsContainer.classList.toggle("open");
+		toggleSettingsButtons.forEach((button) => {
+			button.addEventListener("click", () => {
+				settingsContainer.classList.toggle("open");
+			});
 		});
 	}
 
@@ -122,6 +211,47 @@ document.addEventListener("DOMContentLoaded", () => {
 	stopButtonCompletion.addEventListener("click", () => {
 		socket.emit("stop");
 	});
+
+	// Initialize highlight toggle
+	const highlightToggle = document.getElementById("highlight-toggle");
+	const highlightToggleCompletion = document.getElementById(
+		"highlight-toggle-completion"
+	);
+
+	// Chat mode toggle
+	highlightToggle.addEventListener("change", (e) => {
+		if (e.target.checked) {
+			chatDisplay.classList.remove("highlights-disabled");
+		} else {
+			chatDisplay.classList.add("highlights-disabled");
+		}
+		// Save preference
+		localStorage.setItem("highlightsEnabled", e.target.checked);
+	});
+
+	// Completion mode toggle
+	highlightToggleCompletion.addEventListener("change", (e) => {
+		if (e.target.checked) {
+			completionDisplay.classList.remove("highlights-disabled");
+		} else {
+			completionDisplay.classList.add("highlights-disabled");
+		}
+		// Save preference
+		localStorage.setItem("highlightsEnabled", e.target.checked);
+	});
+
+	// Load saved preference for both modes
+	const highlightsEnabled = localStorage.getItem("highlightsEnabled");
+	if (highlightsEnabled !== null) {
+		highlightToggle.checked = highlightsEnabled === "true";
+		highlightToggleCompletion.checked = highlightsEnabled === "true";
+		if (!highlightToggle.checked) {
+			chatDisplay.classList.add("highlights-disabled");
+		}
+		if (!highlightToggleCompletion.checked) {
+			completionDisplay.classList.add("highlights-disabled");
+		}
+	}
 });
 
 function setupSettingsToggle(groupName) {
@@ -273,12 +403,15 @@ async function generateResponse(
 	prompt = null,
 	mode = "chat"
 ) {
-	socket.emit("stop");
+	// Reset TPS when starting a new generation
+	resetTPS();
+
+	const settings = getSettings();
 	socket.emit("generate", {
-		chat_history: chat_history,
-		prompt: prompt,
+		chat_history,
+		prompt,
 		mode,
-		...getSettings(),
+		...settings,
 	});
 }
 
@@ -309,6 +442,43 @@ async function generateCompletion() {
 }
 
 // Chat Display
+function calculateConfidence(tokens) {
+	if (!tokens || tokens.length === 0) return 0;
+
+	const probabilities = tokens.map((token) => {
+		// Get the probability for this token
+		if (token.probabilities && token.probabilities.length > 0) {
+			// Find the probability of the chosen token
+			const chosenProb = token.probabilities.find(
+				(p) => p.token === token.token
+			);
+			return chosenProb ? chosenProb.probability : 0;
+		}
+		return 0;
+	});
+
+	// Calculate average probability
+	const avgProb =
+		probabilities.reduce((a, b) => a + b, 0) / probabilities.length;
+	return Math.round(avgProb * 100);
+}
+
+function getConfidenceLabel(confidence) {
+	if (confidence >= 90) return "Very High";
+	if (confidence >= 70) return "High";
+	if (confidence >= 50) return "Moderate";
+	if (confidence >= 30) return "Low";
+	return "Very Low";
+}
+
+function getConfidenceColor(confidence) {
+	if (confidence >= 90) return "#15803d"; // Green
+	if (confidence >= 70) return "#4d7c0f"; // Green-yellow
+	if (confidence >= 50) return "#b45309"; // Orange
+	if (confidence >= 30) return "#b91c1c"; // Red
+	return "#7f1d1d"; // Dark red
+}
+
 function updateChatDisplay() {
 	chatDisplay.innerHTML = "";
 
@@ -316,34 +486,71 @@ function updateChatDisplay() {
 		const messageDiv = document.createElement("div");
 		messageDiv.className = `message ${message.role}`;
 
-		if (message.role === "assistant" && Array.isArray(message.tokenSequence)) {
-			message.tokenSequence.forEach((alternatives, position) => {
-				if (!Array.isArray(alternatives) || alternatives.length === 0) return;
+		if (message.role === "assistant") {
+			// Create message content wrapper
+			const contentWrapper = document.createElement("div");
+			contentWrapper.className = "message-content";
 
-				const chosenToken = alternatives.find(([_, __, isChosen]) => isChosen);
-				if (!chosenToken) return;
+			if (message.tokenSequence) {
+				message.tokenSequence.forEach((alternatives, position) => {
+					if (!Array.isArray(alternatives) || alternatives.length === 0) return;
 
-				const [token, prob, _] = chosenToken;
-				const probColor = getProbabilityColor(prob);
-				let i = 0;
-				token.split("\n").map((token) => {
-					if (i > 0) {
-						const br = document.createElement("br");
-						messageDiv.appendChild(br);
-					}
-					const tokenSpan = document.createElement("span");
-					tokenSpan.textContent = token;
-					tokenSpan.className = "token";
-					tokenSpan.dataset.position = position;
-					tokenSpan.dataset.messageIndex = messageIndex;
-					// Add click handler
-					tokenSpan.onclick = () => showTokenOptions(message, position);
-					// Add probability-based highlighting
-					tokenSpan.style.backgroundColor = probColor;
-					messageDiv.appendChild(tokenSpan);
-					i++;
+					const chosenToken = alternatives.find(
+						([_, __, isChosen]) => isChosen
+					);
+					if (!chosenToken) return;
+
+					const [token, prob, _] = chosenToken;
+					const probColor = getProbabilityColor(prob);
+
+					let i = 0;
+					token.split("\n").forEach((tokenText) => {
+						if (i > 0) {
+							const br = document.createElement("br");
+							contentWrapper.appendChild(br);
+						}
+						const tokenSpan = document.createElement("span");
+						tokenSpan.textContent = tokenText;
+						tokenSpan.className = "token";
+						tokenSpan.dataset.position = position;
+						tokenSpan.dataset.messageIndex = messageIndex;
+						tokenSpan.onclick = () => showTokenOptions(message, position);
+						tokenSpan.style.backgroundColor = probColor;
+						contentWrapper.appendChild(tokenSpan);
+						i++;
+					});
 				});
-			});
+
+				messageDiv.appendChild(contentWrapper);
+
+				// Calculate and add confidence indicator
+				const probabilities = message.tokenSequence.map((alternatives) => {
+					const chosenToken = alternatives.find(
+						([_, __, isChosen]) => isChosen
+					);
+					return chosenToken ? chosenToken[1] : 0;
+				});
+
+				const avgProb =
+					probabilities.reduce((a, b) => a + b, 0) / probabilities.length;
+				const confidence = Math.round(avgProb * 100);
+
+				const confidenceDiv = document.createElement("div");
+				confidenceDiv.className = "confidence-indicator";
+				confidenceDiv.innerHTML = `
+                    <div class="confidence-label">Confidence: 
+                        <span style="color: ${getConfidenceColor(confidence)}">
+                            ${getConfidenceLabel(confidence)} (${confidence}%)
+                        </span>
+                    </div>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill" style="width: ${confidence}%; background-color: ${getConfidenceColor(
+					confidence
+				)}"></div>
+                    </div>
+                `;
+				messageDiv.appendChild(confidenceDiv);
+			}
 		} else {
 			messageDiv.textContent = message.content;
 		}
@@ -489,6 +696,29 @@ function handleMouseMove(e) {
 	settingsContainer.style.width = `${newWidth}px`;
 }
 
+function updateTPS() {
+	if (tokenStartTime && tokenCount > 0) {
+		const elapsedSeconds = (Date.now() - tokenStartTime) / 1000;
+		currentTPS = (tokenCount / elapsedSeconds).toFixed(1);
+		const tpsElement = document.getElementById(
+			mode === "chat" ? "tps-indicator" : "tps-indicator-completion"
+		);
+		if (tpsElement) {
+			tpsElement.textContent = `${currentTPS} tokens/sec`;
+		}
+	}
+}
+
+function resetTPS() {
+	tokenStartTime = null;
+	tokenCount = 0;
+	currentTPS = 0;
+	if (tpsUpdateInterval) {
+		clearInterval(tpsUpdateInterval);
+		tpsUpdateInterval = null;
+	}
+}
+
 function initializeWebSocket() {
 	socket = io();
 
@@ -503,9 +733,19 @@ function initializeWebSocket() {
 	socket.on("error", (data) => {
 		console.error("Server error:", data.message);
 		alert(`Error generating response: ${data.message}`);
+		resetTPS();
 	});
 
 	socket.on("token", (data) => {
+		// Start tracking TPS when first token arrives
+		if (!tokenStartTime) {
+			tokenStartTime = Date.now();
+			tokenCount = 0;
+			// Start updating TPS display every 100ms
+			tpsUpdateInterval = setInterval(updateTPS, 100);
+		}
+		tokenCount++;
+
 		console.log("Received token:", data);
 		if (data.mode === "chat" && !currentMessageDiv) {
 			currentMessageDiv = document.createElement("div");
@@ -558,10 +798,14 @@ function initializeWebSocket() {
 		}
 	});
 	socket.on("end", () => {
-		if (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].partial) {
-			chatHistory[chatHistory.length - 1].partial = false;
+		console.log("Generation completed");
+		currentMessageDiv = null;
+
+		// Final TPS update and cleanup
+		updateTPS();
+		if (tpsUpdateInterval) {
+			clearInterval(tpsUpdateInterval);
+			tpsUpdateInterval = null;
 		}
-		console.log("end");
-		updateChatDisplay();
 	});
 }
