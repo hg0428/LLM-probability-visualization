@@ -19,6 +19,7 @@ main {
 	display: flex;
 	flex-direction: column;
 	background: #ffffff;
+	position: relative;
 }
 /* Container and Layout */
 .container {
@@ -29,12 +30,13 @@ main {
 
 .main-chat-content,
 .main-completion-content {
-	flex: 1;
+	box-sizing: border-box;
 	display: flex;
 	flex-direction: column;
 	height: 100%;
 	box-sizing: border-box;
 	background: #ffffff;
+	position: relative;
 }
 
 .main-completion-content {
@@ -44,15 +46,17 @@ main {
 /* Chat Display */
 .chat-container,
 .completion-container {
+	box-sizing: border-box;
 	display: flex;
 	flex-direction: column;
-	height: 100%;
+	flex-grow: 1;
+	overflow: hidden;
 }
 
 .chat-display,
 .completion-display {
-	flex: 1;
-	overflow-y: scroll;
+	flex-grow: 1;
+	overflow-y: auto;
 	padding: 1rem;
 	margin-bottom: 16px;
 	background: #f8fafc;
@@ -116,7 +120,9 @@ main {
 .input-area {
 	display: flex;
 	gap: 12px;
-	height: 100px;
+	flex-shrink: 0;
+	height: 100px; /* Set a fixed height for the input area */
+	overflow-y: auto; /* Enable scrolling within the input area */
 	padding: 1rem;
 	background: #ffffff;
 	border-radius: 12px;
