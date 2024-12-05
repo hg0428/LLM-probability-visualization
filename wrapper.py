@@ -46,7 +46,6 @@ class LlamaWrapper:
         # Get raw logits pointer
         logits_ptr = llama_get_logits(self.model.ctx)
 
-        # Use numpy for fastest conversion
         return torch.from_numpy(
             np.array([np.ctypeslib.as_array(logits_ptr, shape=(self.model.n_vocab(),))])
         ).to(self.device)
