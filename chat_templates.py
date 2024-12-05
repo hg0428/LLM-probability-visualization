@@ -1,17 +1,18 @@
-def format_chat_history(messages, model_name="Qwen2.5-0.5B"):
+def format_chat_history(messages, model, model_name="Qwen2.5-0.5B"):
     """Format chat history according to model's template."""
     print(f"Formatting chat history for model: {model_name}")
     print(f"Input messages: {messages}")
-    
+
     if model_name.startswith("Qwen"):
         formatted = format_qwen_chat(messages)
     elif model_name.startswith("gpt2"):
         formatted = format_gpt2_chat(messages)
     else:
         formatted = format_default_chat(messages)
-    
+
     print(f"Formatted chat history: {formatted}")
     return formatted
+
 
 def format_qwen_chat(messages):
     """Format chat history for Qwen models."""
@@ -29,6 +30,7 @@ def format_qwen_chat(messages):
             formatted += "<|im_end|>\n"
     return formatted
 
+
 def format_gpt2_chat(messages):
     """Format chat history for GPT-2."""
     formatted = ""
@@ -44,6 +46,7 @@ def format_gpt2_chat(messages):
         if not msg.get("partial", None):
             formatted += "\n"
     return formatted
+
 
 def format_default_chat(messages):
     """Default chat formatting."""

@@ -14,6 +14,7 @@ from itertools import count
 from uuid import uuid4
 import random
 from text_generation import generate_text
+from wrapper import LlamaWrapper, TransformersWrapper
 
 
 class StopOnTokens(StoppingCriteria):
@@ -29,11 +30,27 @@ class StopOnTokens(StoppingCriteria):
 
 # Available models
 MODELS = {
+    # "Qwen2.5-0.5B": {"name": "Qwen/Qwen2.5-0.5B-Instruct", "type": "transformers"},
     "Qwen2.5-0.5B": {
-        "name": "Qwen/Qwen2.5-0.5B-Instruct",
-        "quantization": "dynamic",  # Options: None, "dynamic"
+        "name": "/Users/hudsongouge/.ollama/models/blobs/sha256-fa4d41b65761ed565cac6b5f62e35135d050408b033114a128ab308c02b2e83a",
+        "type": "llama.cpp",
+        "n_gpu_layers": -1,  # -1 for auto.
     },
-    "GPT2": {"name": "gpt2", "quantization": None},
+    "Qwen2.5-3B": {
+        "name": "/Users/hudsongouge/.ollama/models/blobs/sha256-5ee4f07cdb9beadbbb293e85803c569b01bd37ed059d2715faa7bb405f31caa6",
+        "type": "llama.cpp",
+        "n_gpu_layers": -1,
+    },
+    "Llama3.2-1B": {
+        "name": "/Users/hudsongouge/.ollama/models/blobs/sha256-74701a8c35f6c8d9a4b91f3f3497643001d63e0c7a84e085bed452548fa88d45",
+        "type": "llama.cpp",
+        "n_gpu_layers": -1,
+    },
+    "Llama3.2-3B": {
+        "name": "/Users/hudsongouge/.ollama/models/blobs/sha256-dde5aa3fc5ffc17176b5e8bdc82f587b24b2678c6c66101bf7da77af9f7ccdff",
+        "type": "llama.cpp",
+        "n_gpu_layers": -1,
+    },
 }
 
 app = Flask(__name__)
@@ -51,48 +68,33 @@ def get_model_and_tokenizer(model_name):
             f"Model {model_name} not found. Available models: {list(MODELS.keys())}"
         )
 
-    if model_name not in loaded_models:
-        print(f"Loading model: {model_name}")
-        model_config = MODELS[model_name]
-        quantization = model_config["quantization"]
+    if model_name in loaded_models:
+        return loaded_models[model_name], loaded_tokenizers[model_name]
 
-        # Determine the best available device
-        if torch.cuda.is_available():
-            device = "cuda"
-        elif torch.backends.mps.is_available():
-            device = "mps"
-        else:
-            device = "cpu"
+    model_config = MODELS[model_name]
 
-        # Load the model with reduced precision
-        model = AutoModelForCausalLM.from_pretrained(
-            model_config["name"],
-            device_map=device,
-            torch_dtype=torch.float16,  # Use half-precision
+    if model_config["type"] == "llama.cpp":
+        model = LlamaWrapper(
+            model_path=model_config["name"],
+            n_gpu_layers=model_config.get("n_gpu_layers", 1),
+        )
+        tokenizer = model.tokenizer
+    else:
+        # Existing transformers model loading logic
+        tokenizer = AutoTokenizer.from_pretrained(model_config["name"])
+        model = TransformersWrapper(
+            AutoModelForCausalLM.from_pretrained(model_config["name"]), tokenizer
         )
 
-        # Apply additional memory-saving techniques
-        if quantization == "dynamic":
-            try:
-                # Attempt to reduce model size and memory usage
-                for param in model.parameters():
-                    param.requires_grad = False
-
-                # Clear any unnecessary caches
-                torch.cuda.empty_cache()
-
-                print("Memory optimization applied successfully")
-            except Exception as e:
-                print(f"Warning: Memory optimization failed: {e}")
-
-        # Move to the appropriate device
-        if device == "mps":
+        if torch.cuda.is_available():
+            model = model.to("cuda")
+        if torch.backends.mps.is_available():
             model = model.to("mps")
 
-        tokenizer = AutoTokenizer.from_pretrained(model_config["name"])
-        loaded_models[model_name] = (model, tokenizer)
+    loaded_models[model_name] = model
+    loaded_tokenizers[model_name] = tokenizer
 
-    return loaded_models[model_name]
+    return model, tokenizer
 
 
 @app.route("/")
@@ -142,12 +144,11 @@ def handle_generate(data):
         model, tokenizer = get_model_and_tokenizer(model_name)
 
         # Format chat history
-        formatted_prompt = format_chat_history(chat_history, model_name)
+        formatted_prompt = format_chat_history(chat_history, model, model_name)
         n = 0
         # Generate text with alternatives
         for token, alternatives in generate_text(
             model,
-            tokenizer,
             formatted_prompt,
             max_new_tokens,
             top_k,

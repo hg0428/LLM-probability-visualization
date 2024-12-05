@@ -81,7 +81,6 @@ def calculate_dry_penalty(
 
 def generate_text(
     model,
-    tokenizer,
     prompt,
     max_new_tokens=0,
     top_k=50,
@@ -108,12 +107,11 @@ def generate_text(
     """Generate text and return token alternatives for each position."""
     try:
         sequence_breakers = {
-            tokenizer.encode(f"a{s}")[-1] for s in sequence_breaker_strings
+            model.tokenize(f"a{s}")[-1] for s in sequence_breaker_strings
         }
         # Tokenize input
-        input_ids = tokenizer.encode(prompt, return_tensors="pt")
+        input_ids = model.tokenize(prompt)
         device = model.device
-        input_ids = input_ids.to(device)
         sequence_alternatives = []
         current_tokens = input_ids
 
@@ -124,14 +122,15 @@ def generate_text(
         # Generate one token at a time
         for i in range(max_new_tokens):
             # Get model outputs and probabilities
-            with torch.no_grad():
-                outputs = model(current_tokens)
-                logits = outputs.logits[:, -1, :]
+            with torch.inference_mode():
+                logits = model(current_tokens)
+
                 # Get original probabilities for displaying alternatives
                 orig_probs = torch.softmax(logits, dim=-1)
                 num_show_probs, num_show_indices = torch.topk(
                     orig_probs[0], k=min(num_show, len(orig_probs[0]))
                 )
+                del orig_probs
 
                 # Apply repetition penalty
                 if penalties_enabled and repetition_penalty != 1.0:
@@ -164,6 +163,8 @@ def generate_text(
                 if randomness_enabled and temperature > 1e-7 and temperature != 1.0:
                     logits = logits / temperature
                 probs = torch.softmax(logits, dim=-1)
+                del logits
+
                 if truncation_enabled:
                     # Apply top-p (nucleus) sampling
                     if 0 < top_p < 1.0:
@@ -232,20 +233,20 @@ def generate_text(
             # Record alternatives including the chosen token
             alternatives = []
             for prob, idx in zip(num_show_probs, num_show_indices):
-                token = tokenizer.decode([idx.item()])
+                token = model.detokenize([idx.item()])
                 alternatives.append(
                     [token, float(prob.item()), idx.item() == next_token.item()]
                 )
-            yield tokenizer.decode([next_token.item()]), alternatives
+            yield model.detokenize([next_token.item()]), alternatives
             if alternatives:
                 sequence_alternatives.append(alternatives)
-                # Update token frequencies
-                if penalties_enabled and frequency_penalty > 0:
-                    token_id = next_token.item()
-                    token_frequencies[token_id] = token_frequencies.get(token_id, 0) + 1
-                if penalties_enabled and presence_penalty != 0:
-                    token_id = next_token.item()
-                    token_presence.add(token_id)
+            # Update token frequencies
+            if penalties_enabled and frequency_penalty > 0:
+                token_id = next_token.item()
+                token_frequencies[token_id] = token_frequencies.get(token_id, 0) + 1
+            if penalties_enabled and presence_penalty != 0:
+                token_id = next_token.item()
+                token_presence.add(token_id)
             # Add token to sequence
             next_token = next_token.to(device)
             current_tokens = torch.cat(
@@ -253,7 +254,10 @@ def generate_text(
             )
 
             # Stop if we generate an end token
-            if next_token.item() in [tokenizer.eos_token_id, tokenizer.pad_token_id]:
+            if next_token.item() in [
+                model.eos_token_id,
+                model.pad_token_id,
+            ]:
                 break
 
         if not sequence_alternatives:
