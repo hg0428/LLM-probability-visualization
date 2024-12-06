@@ -106,9 +106,10 @@ def generate_text(
 ):
     """Generate text and return token alternatives for each position."""
     try:
-        sequence_breakers = {
-            model.tokenize(f"a{s}")[-1] for s in sequence_breaker_strings
-        }
+        if dry_enabled:
+            sequence_breakers = {
+                model.tokenize(s)[-1] for s in sequence_breaker_strings
+            }
         # Tokenize input
         input_ids = model.tokenize(prompt)
         device = model.device

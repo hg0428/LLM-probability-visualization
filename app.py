@@ -34,22 +34,18 @@ MODELS = {
     "Qwen2.5-0.5B": {
         "name": "/Users/hudsongouge/.ollama/models/blobs/sha256-fa4d41b65761ed565cac6b5f62e35135d050408b033114a128ab308c02b2e83a",
         "type": "llama.cpp",
-        "n_gpu_layers": -1,  # -1 for auto.
     },
     "Qwen2.5-3B": {
         "name": "/Users/hudsongouge/.ollama/models/blobs/sha256-5ee4f07cdb9beadbbb293e85803c569b01bd37ed059d2715faa7bb405f31caa6",
         "type": "llama.cpp",
-        "n_gpu_layers": -1,
     },
     "Llama3.2-1B": {
         "name": "/Users/hudsongouge/.ollama/models/blobs/sha256-74701a8c35f6c8d9a4b91f3f3497643001d63e0c7a84e085bed452548fa88d45",
         "type": "llama.cpp",
-        "n_gpu_layers": -1,
     },
     "Llama3.2-3B": {
         "name": "/Users/hudsongouge/.ollama/models/blobs/sha256-dde5aa3fc5ffc17176b5e8bdc82f587b24b2678c6c66101bf7da77af9f7ccdff",
         "type": "llama.cpp",
-        "n_gpu_layers": -1,
     },
 }
 
@@ -76,7 +72,7 @@ def get_model_and_tokenizer(model_name):
     if model_config["type"] == "llama.cpp":
         model = LlamaWrapper(
             model_path=model_config["name"],
-            n_gpu_layers=model_config.get("n_gpu_layers", 1),
+            n_gpu_layers=model_config.get("n_gpu_layers", -1),
         )
         tokenizer = model.tokenizer
     else:

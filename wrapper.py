@@ -46,9 +46,10 @@ class LlamaWrapper:
         # Get raw logits pointer
         logits_ptr = llama_get_logits(self.model.ctx)
 
-        return torch.from_numpy(
-            np.array([np.ctypeslib.as_array(logits_ptr, shape=(self.model.n_vocab(),))])
-        ).to(self.device)
+        return torch.tensor(
+            np.ctypeslib.as_array(logits_ptr, shape=(self.model.n_vocab(),)),
+            device=self.device,
+        ).unsqueeze(0)
 
     def tokenize(self, text):
         return self.tokenizer.encode(text)

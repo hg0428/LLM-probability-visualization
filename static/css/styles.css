@@ -21,6 +21,7 @@ main {
 	background: #ffffff;
 	position: relative;
 }
+
 /* Container and Layout */
 .container {
 	height: 100vh;
@@ -34,7 +35,6 @@ main {
 	display: flex;
 	flex-direction: column;
 	height: 100%;
-	box-sizing: border-box;
 	background: #ffffff;
 	position: relative;
 }
@@ -72,10 +72,6 @@ main {
 	max-width: 80%;
 	width: fit-content;
 	line-height: 1.4;
-}
-
-.message-content {
-	margin-bottom: 8px;
 }
 
 .message.user {
@@ -121,8 +117,7 @@ main {
 	display: flex;
 	gap: 12px;
 	flex-shrink: 0;
-	height: 100px; /* Set a fixed height for the input area */
-	overflow-y: auto; /* Enable scrolling within the input area */
+	height: 100px;
 	padding: 1rem;
 	background: #ffffff;
 	border-radius: 12px;
@@ -236,10 +231,6 @@ button:hover {
 	min-width: 0;
 }
 
-.settings-container.animating {
-	transition: width 0.2s ease-out;
-}
-
 .settings-container.closed {
 	width: 0 !important;
 }
@@ -276,7 +267,6 @@ button:hover {
 	opacity: 1;
 }
 
-/* Keep handle visible when panel is closed */
 .settings-container.closed .resize-handle {
 	left: -8px;
 }
@@ -295,10 +285,6 @@ button:hover {
 	overflow-y: auto;
 	padding: 20px;
 	padding-top: 16px;
-}
-
-.settings-container.animating .settings-panel {
-	transition: opacity 0.2s ease;
 }
 
 .settings-container.closed .settings-panel {
@@ -334,18 +320,6 @@ button:hover {
 
 .toggle-settings:hover {
 	background: #1d4ed8;
-}
-
-.drag-handle {
-	flex: 1;
-	width: 100%;
-	cursor: ew-resize;
-}
-
-.settings-panel {
-	height: 100%;
-	overflow-y: auto;
-	padding: 20px;
 }
 
 .settings-panel h3 {
@@ -460,7 +434,6 @@ button:hover {
 /* Token Styling */
 .token {
 	display: inline-block;
-
 	white-space: pre;
 	cursor: pointer;
 	transition: background-color 0.2s;
@@ -503,46 +476,6 @@ button:hover {
 	color: #666;
 	margin-left: 10px;
 	font-size: 0.9em;
-}
-
-/* Token Probabilities */
-#token-probabilities {
-	background-color: white;
-	padding: 20px;
-	border-radius: 8px;
-	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-#prob-table {
-	width: 100%;
-	border-collapse: collapse;
-	margin-top: 10px;
-}
-
-#prob-table th,
-#prob-table td {
-	padding: 8px;
-	text-align: left;
-	border-bottom: 1px solid #ddd;
-}
-
-.legend {
-	display: flex;
-	gap: 20px;
-	margin-top: 20px;
-	justify-content: center;
-}
-
-.legend-item {
-	display: flex;
-	align-items: center;
-	gap: 5px;
-}
-
-.legend-color {
-	width: 20px;
-	height: 20px;
-	border-radius: 4px;
 }
 
 /* Token Modal */
@@ -639,60 +572,6 @@ button:hover {
 	font-size: 16px;
 }
 
-.toggle-switch {
-	display: inline-flex;
-	align-items: center;
-	gap: 8px;
-	cursor: pointer;
-	white-space: nowrap;
-}
-
-.toggle-switch input {
-	display: none;
-}
-
-.toggle-slider {
-	position: relative;
-	width: 36px;
-	height: 20px;
-	background-color: #e2e8f0;
-	border-radius: 20px;
-	transition: background-color 0.2s;
-}
-
-.toggle-slider:before {
-	content: "";
-	position: absolute;
-	width: 16px;
-	height: 16px;
-	left: 2px;
-	bottom: 2px;
-	background-color: white;
-	border-radius: 50%;
-	transition: transform 0.2s;
-}
-
-.toggle-switch input:checked + .toggle-slider {
-	background-color: #2563eb;
-}
-
-.toggle-switch input:checked + .toggle-slider:before {
-	transform: translateX(16px);
-}
-
-.toggle-label {
-	font-size: 0.75rem;
-	user-select: none;
-}
-
-.token {
-	transition: background-color 0.2s;
-}
-
-.highlights-disabled .token {
-	background-color: transparent !important;
-}
-
 .tps-indicator {
 	background-color: #f1f5f9;
 	padding: 4px 8px;
@@ -724,4 +603,8 @@ button:hover {
 	.toggle-settings {
 		width: 40px;
 	}
+}
+
+.highlights-disabled .token {
+	background-color: transparent !important;
 }
