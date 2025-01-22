@@ -13,7 +13,7 @@ from chat_templates import format_chat_history
 from itertools import count
 from uuid import uuid4
 import random
-from text_generation import generate_text
+from text_generation import benchmark_generation, generate_text
 from wrapper import LlamaWrapper, TransformersWrapper
 
 
@@ -90,6 +90,8 @@ def get_model_and_tokenizer(model_name):
     loaded_models[model_name] = model
     loaded_tokenizers[model_name] = tokenizer
 
+    tps = benchmark_generation(model, "Hello,")
+    print(f"Model {model_name}\nTPS: {tps}")
     return model, tokenizer
 
 

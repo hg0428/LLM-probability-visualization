@@ -1,5 +1,6 @@
 import torch
 import torch.quantization
+import time
 import string
 from chat_templates import format_chat_history
 from itertools import count
@@ -106,6 +107,7 @@ def generate_text(
 ):
     """Generate text and return token alternatives for each position."""
     try:
+        model.reset()
         if dry_enabled:
             sequence_breakers = {
                 model.tokenize(s)[-1] for s in sequence_breaker_strings
@@ -223,7 +225,7 @@ def generate_text(
                     # Renormalize remaining probabilities
                     norm_factor = filtered_probs.sum(dim=-1, keepdim=True)
                     probs = filtered_probs / norm_factor
-                if randomness_enabled:
+                if randomness_enabled and temperature > 1e-7:
                     # Ensure probabilities are valid for multinomial sampling
                     probs = probs / probs.sum()  # Renormalize
                     next_token = torch.multinomial(probs, num_samples=1)[0][0]
@@ -259,10 +261,8 @@ def generate_text(
                 token_id = next_token.item()
                 token_presence.add(token_id)
             # Add token to sequence
-            next_token = next_token.to(device)
-            current_tokens = torch.cat(
-                [current_tokens, next_token.unsqueeze(0).unsqueeze(0)], dim=1
-            )
+            next_token = next_token
+            current_tokens = torch.cat([next_token.unsqueeze(0).unsqueeze(0)], dim=1)
 
             # Stop if we generate an end token
             if next_token.item() in [
@@ -279,3 +279,29 @@ def generate_text(
     except Exception as e:
         print(f"Error in generate_text: {str(e)}")
         raise e
+
+
+def benchmark_generation(model, prompt, max_tokens=100):
+    start_time = time.time()
+    tokens_generated = 0
+
+    for _, _ in generate_text(
+        model,
+        prompt,
+        max_tokens,
+        truncation_enabled=False,
+        randomness_enabled=False,
+        penalties_enabled=False,
+        dry_enabled=False,
+        xtc_enabled=False,
+        num_show=0,
+    ):
+        tokens_generated += 1
+
+    elapsed_time = time.time() - start_time
+    tokens_per_second = tokens_generated / elapsed_time
+
+    print(f"Generated {tokens_generated} tokens in {elapsed_time:.2f} seconds")
+    print(f"Tokens per second: {tokens_per_second:.2f}")
+
+    return tokens_per_second

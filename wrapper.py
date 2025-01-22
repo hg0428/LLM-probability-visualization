@@ -1,4 +1,5 @@
 from llama_cpp import Llama, llama_get_logits
+import llama_cpp
 import torch
 from dataclasses import dataclass
 from typing import Optional, List
@@ -38,18 +39,16 @@ class LlamaWrapper:
         self.pad_token_id = self.model.token_eos()
 
     def __call__(self, input_ids: torch.LongTensor):
-        self.model.reset()
-        # Directly evaluate tokens
         tokens = input_ids[0].tolist()
         self.model.eval(tokens)
 
-        # Get raw logits pointer
         logits_ptr = llama_get_logits(self.model.ctx)
-
-        return torch.tensor(
-            np.ctypeslib.as_array(logits_ptr, shape=(self.model.n_vocab(),)),
-            device=self.device,
+        return torch.from_numpy(
+            np.ctypeslib.as_array(logits_ptr, shape=(self.model.n_vocab(),))
         ).unsqueeze(0)
+
+    def reset(self):
+        self.model.reset()
 
     def tokenize(self, text):
         return self.tokenizer.encode(text)
@@ -85,3 +84,7 @@ class TransformersWrapper:
         self.model = self.model.to(device)
         self.device = device
         return self
+
+    def reset(self):
+        pass
+        # self.model.reset()
