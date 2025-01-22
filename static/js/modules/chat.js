@@ -180,6 +180,7 @@ async function replaceToken(message, position, token) {
 		...getGenerationSettings(),
 	};
 	document.getElementById("token-modal").style.display = "none";
+	resetTokenMetrics();
 	await generateText(settings);
 }
 
