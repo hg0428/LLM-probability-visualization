@@ -1,12 +1,38 @@
-def format_chat_history(messages, model, model_name="Qwen2.5-0.5B"):
+import datetime
+import random
+
+
+def format_chatter_timestamp(dt, offset_hours=5):
+    # Convert to target timezone
+    target_tz = datetime.timezone(datetime.timedelta(hours=offset_hours))
+    dt_local = dt.astimezone(target_tz)
+
+    # Format output
+    return (
+        dt_local.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]
+        + dt_local.strftime("%z")[:3]
+        + ":"
+        + dt_local.strftime("%z")[3:]
+    )
+
+
+def format_chat_history(
+    messages,
+    model,
+    model_name="Qwen2.5-0.5B",
+    model_family="qwen2.5",
+    model_format="chatml",
+):
     """Format chat history according to model's template."""
     print(f"Formatting chat history for model: {model_name}")
     print(f"Input messages: {messages}")
 
-    if model_name.startswith("Qwen"):
-        formatted = format_qwen_chat(messages)
-    elif model_name.startswith("gpt2"):
+    if model_format == "chatml":
+        formatted = format_chatml_chat(messages)
+    elif model_format == "gpt2":
         formatted = format_gpt2_chat(messages)
+    elif model_format == "chatter":
+        formatted = format_chatter_chat(messages)
     else:
         formatted = format_default_chat(messages)
 
@@ -45,6 +71,35 @@ def format_gpt2_chat(messages):
             formatted += f"Assistant: {content}"
         if not msg.get("partial", None):
             formatted += "\n"
+    return formatted
+
+
+def format_chatter_chat(
+    messages,
+    start_time=datetime.datetime.now(),
+    offset_hours=5,
+    user_name="Hudson",
+    assistant_name="NeverUsedDC",
+    system_name="System",
+):
+    formatted = ""
+    offset_seconds = 0
+    for msg in messages:
+        role = msg["role"]
+        content = msg["content"]
+        if formatted != "":
+            formatted += "\n"
+        if role == "system":
+            name = system_name
+        elif role == "user":
+            name = user_name
+        elif role == "assistant":
+            name = assistant_name
+        formatted += f"{name} at {format_chatter_timestamp(start_time + datetime.timedelta(seconds=offset_seconds), offset_hours, )}:\n{content}"
+        if not msg.get("partial", None):
+            formatted += "\n"
+        offset_seconds += random.randint(0, 30)
+    return formatted
     return formatted
 
 

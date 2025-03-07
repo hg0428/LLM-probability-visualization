@@ -490,6 +490,154 @@ button:hover {
 	z-index: 2000;
 }
 
+/* Model Logit Summing Styles */
+.model-weight-entry {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 8px;
+	padding: 8px;
+	border-radius: 4px;
+	background-color: #f9fafb;
+}
+
+.model-weight-entry select {
+	flex: 2;
+}
+
+.model-weight-entry input[type="number"] {
+	flex: 1;
+	min-width: 60px;
+}
+
+.small-button {
+	padding: 4px 8px;
+	border-radius: 4px;
+	border: 1px solid #e5e7eb;
+	background-color: #f9fafb;
+	cursor: pointer;
+	transition: background-color 0.2s ease;
+}
+
+.small-button:hover {
+	background-color: #e5e7eb;
+}
+
+.remove-model-button {
+	color: #ef4444;
+	padding: 4px 8px;
+	border: none;
+	background: transparent;
+	cursor: pointer;
+}
+
+.remove-model-button:hover {
+	color: #dc2626;
+}
+
+#add-model-button {
+	margin-top: 8px;
+	background-color: #2563eb;
+	color: white;
+	border: none;
+}
+
+#add-model-button:hover {
+	background-color: #1d4ed8;
+}
+
+/* Enhanced Logit Summing UI */
+.logit-sum-instructions {
+	background-color: #f0f9ff;
+	border-left: 3px solid #2563eb;
+	padding: 10px;
+	margin-bottom: 15px;
+	border-radius: 0 4px 4px 0;
+	font-size: 0.85rem;
+}
+
+.logit-sum-instructions p {
+	margin: 0 0 8px 0;
+	color: #1e40af;
+	font-weight: 500;
+}
+
+.logit-sum-instructions ol {
+	margin: 0;
+	padding-left: 20px;
+	color: #4b5563;
+}
+
+.logit-sum-instructions li {
+	margin-bottom: 4px;
+}
+
+.model-weights-header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 4px 8px;
+	margin-bottom: 8px;
+	font-weight: 500;
+	font-size: 0.85rem;
+	color: #4b5563;
+	border-bottom: 1px solid #e5e7eb;
+}
+
+.model-header {
+	flex: 2;
+}
+
+.weight-header {
+	flex: 1;
+	min-width: 60px;
+}
+
+.action-header {
+	width: 32px;
+}
+
+/* Notification System */
+#notification-container {
+	position: fixed;
+	bottom: 20px;
+	right: 20px;
+	z-index: 9999;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	max-width: 300px;
+}
+
+.notification {
+	background-color: #2563eb;
+	color: white;
+	padding: 12px 16px;
+	border-radius: 6px;
+	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+	opacity: 0;
+	transform: translateX(50px);
+	transition: opacity 0.3s, transform 0.3s;
+	font-size: 0.9rem;
+}
+
+.notification.show {
+	opacity: 1;
+	transform: translateX(0);
+}
+
+.notification.error {
+	background-color: #ef4444;
+}
+
+.notification.success {
+	background-color: #10b981;
+}
+
+.notification.warning {
+	background-color: #f59e0b;
+}
+
 .modal-content {
 	position: relative;
 	background: white;

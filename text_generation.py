@@ -104,6 +104,7 @@ def generate_text(
     dry_range=512,
     xtc_threshold=0.1,
     xtc_probability=0.5,
+    chat_messages=None,
 ):
     """Generate text and return token alternatives for each position."""
     try:
@@ -126,7 +127,11 @@ def generate_text(
         for i in range(max_new_tokens):
             # Get model outputs and probabilities
             with torch.inference_mode():
-                logits = model(current_tokens)
+                # Check if this is a MultiModelWrapper and we have chat messages
+                if hasattr(model, 'model_formats') and chat_messages:
+                    logits = model(current_tokens, chat_messages)
+                else:
+                    logits = model(current_tokens)
 
                 # Get original probabilities for displaying alternatives
                 orig_probs = torch.softmax(logits, dim=-1)

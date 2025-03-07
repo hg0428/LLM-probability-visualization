@@ -18,6 +18,9 @@
 			href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
 		/>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+		<script id="model-families-data" type="application/json">
+			{{ model_families | tojson }}
+		</script>
 	</head>
 	<body>
 		<div class="container">
@@ -98,6 +101,57 @@
 								{% endfor %}
 							</select>
 						</div>
+					</div>
+
+					<div class="settings-group-header">
+						<h3
+							title="Combine multiple models from the same family by summing their logits with different weights"
+						>
+							Model Logit Summing
+						</h3>
+						<label
+							class="toggle-switch"
+							title="Enable/disable model logit summing"
+						>
+							<input type="checkbox" id="toggle-logit-sum" />
+							<span class="toggle-slider"></span>
+							<span class="toggle-label">Enable</span>
+						</label>
+					</div>
+
+					<div class="settings-group" id="logit-sum-group" style="display: none;">
+						<div class="logit-sum-instructions">
+							<p>Combine multiple models from the same family with different weights to create a blended model output.</p>
+							<ol>
+								<li>Select a model family below</li>
+								<li>Add models using the "Add Model" button</li>
+								<li>Adjust weights for each model (higher values = more influence)</li>
+							</ol>
+						</div>
+						<div class="setting">
+							<label
+								for="model-family-select"
+								title="Select the model family to use for logit summing. Only models from the same family can be combined."
+								>Model Family:</label
+							>
+							<select id="model-family-select">
+								{% for family, models in model_families.items() %}
+								<option value="{{ family }}">{{ family }}</option>
+								{% endfor %}
+							</select>
+							<span class="setting-hint">Models must be from the same family to be combined</span>
+						</div>
+						<div id="model-weights-container">
+							<!-- Model weights will be added here dynamically -->
+							<div class="model-weights-header">
+								<span class="model-header">Model</span>
+								<span class="weight-header">Weight</span>
+								<span class="action-header"></span>
+							</div>
+						</div>
+						<button id="add-model-button" class="small-button">
+							<i class="fas fa-plus"></i> Add Model
+						</button>
 					</div>
 					<div class="settings-group-header">
 						<h3
