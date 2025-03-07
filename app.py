@@ -317,8 +317,6 @@ def handle_generate(data):
     assistant_role_name = data.get("assistant_role_name", "assistant")
     system_role_name = data.get("system_role_name", "system")
     system_message = data.get("system_message", "")
-    if system_message:
-        chat_history = [{"role": "system", "content": system_message}, *chat_history]
 
     try:
         model, tokenizer = get_model_and_tokenizer(model_name)
@@ -357,7 +355,11 @@ def handle_generate(data):
                 model_family = model_config["family"]
                 model_format = model_config["format"]
                 primary_model_name = model_name
-
+            if system_message:
+                chat_history = [
+                    {"role": "system", "content": system_message},
+                    *chat_history,
+                ]
             prompt = format_chat_history(
                 chat_history,
                 model,

@@ -5,6 +5,7 @@ import {
 	createConfidenceIndicator,
 	showModal,
 } from "./utils.js";
+import { getSettings } from "./settings.js";
 
 export function initializeChatHandlers() {
 	document
@@ -51,6 +52,19 @@ export async function generateChat() {
 export function updateChatDisplay(chosen, options, messageId) {
 	const chatDisplay = document.getElementById("chat-display");
 	chatDisplay.innerHTML = "";
+
+	let hasSystem = getSettings().system_message;
+	// Update current message if new token received
+	if (chosen && options && messageId !== undefined) {
+		console.log("chosen tokens", chosen);
+		const currentMessage = state.chatHistory[messageId - (hasSystem ? 1 : 0)];
+		console.log(currentMessage);
+		if (currentMessage && currentMessage.partial) {
+			currentMessage.content += chosen;
+			currentMessage.chosenTokens.push(chosen);
+			currentMessage.tokenSequence.push(options);
+		}
+	}
 
 	state.chatHistory.forEach((message, messageIndex) => {
 		const messageDiv = document.createElement("div");
@@ -109,16 +123,6 @@ export function updateChatDisplay(chosen, options, messageId) {
 	});
 
 	chatDisplay.scrollTop = chatDisplay.scrollHeight;
-
-	// Update current message if new token received
-	if (chosen && options && messageId !== undefined) {
-		const currentMessage = state.chatHistory[messageId];
-		if (currentMessage && currentMessage.partial) {
-			currentMessage.content += chosen;
-			currentMessage.chosenTokens.push(chosen);
-			currentMessage.tokenSequence.push(options);
-		}
-	}
 }
 
 function showTokenOptions(message, position) {

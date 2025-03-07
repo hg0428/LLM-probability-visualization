@@ -34,7 +34,7 @@ function handleToken(data) {
 	const { chosen, options, message_id, token_id, mode } = data;
 
 	if (!options || options.length === 0) return;
-
+	console.log("token");
 	if (mode === "completion") {
 		updateCompletionDisplay(chosen, options);
 	} else {
