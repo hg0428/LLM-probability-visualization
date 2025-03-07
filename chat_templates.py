@@ -48,17 +48,31 @@ def format_chat_history(
     model_name="Qwen2.5-0.5B",
     model_family="qwen2.5",
     model_format="chatml",
+    user_role_name="user",
+    assistant_role_name="assistant",
+    system_role_name="system",
 ):
     """Format chat history according to model's template."""
     print(f"Formatting chat history for model: {model_name}")
     print(f"Input messages: {messages}")
 
     if model_format == "chatml":
-        formatted = format_chatml_chat(messages)
+        formatted = format_chatml_chat(
+            messages, user_role_name, assistant_role_name, system_role_name
+        )
     elif model_format == "gpt2":
         formatted = format_gpt2_chat(messages)
     elif model_format == "chatter":
-        formatted = format_chatter_chat(messages)
+        formatted = format_chatter_chat(
+            messages,
+            user_name=user_role_name,
+            assistant_name=assistant_role_name,
+            system_name=system_role_name,
+        )
+    elif model_format == "llama3":
+        formatted = format_llama3_chat(
+            messages, user_role_name, assistant_role_name, system_role_name
+        )
     else:
         formatted = format_default_chat(messages)
 
@@ -66,18 +80,18 @@ def format_chat_history(
     return formatted
 
 
-def format_chatml_chat(messages):
+def format_chatml_chat(messages, user_role_name, assistant_role_name, system_role_name):
     """Format chat history for Qwen models."""
     formatted = ""
     for msg in messages:
         role = msg["role"]
         content = msg["content"]
         if role == "system":
-            formatted += f"<|im_start|>system\n{content}"
+            formatted += f"<|im_start|>{system_role_name}\n{content}"
         elif role == "user":
-            formatted += f"<|im_start|>user\n{content}"
+            formatted += f"<|im_start|>{user_role_name}\n{content}"
         elif role == "assistant":
-            formatted += f"<|im_start|>assistant\n{content}"
+            formatted += f"<|im_start|>{assistant_role_name}\n{content}"
         if not msg.get("partial", None):
             formatted += "<|im_end|>\n"
     return formatted
@@ -100,12 +114,33 @@ def format_gpt2_chat(messages):
     return formatted
 
 
+def format_llama3_chat(messages, user_role_name, assistant_role_name, system_role_name):
+    """Format chat history for Qwen models."""
+    formatted = ""
+    for msg in messages:
+        role = msg["role"]
+        content = msg["content"]
+        if role == "system":
+            formatted += (
+                f"<|start_header_id|>{system_role_name}<|end_header_id|>\n\n{content}"
+            )
+        elif role == "user":
+            formatted += (
+                f"<|start_header_id|>{user_role_name}<|end_header_id|>\n\n{content}"
+            )
+        elif role == "assistant":
+            formatted += f"<|start_header_id|>{assistant_role_name}<|end_header_id|>\n\n{content}"
+        if not msg.get("partial", None):
+            formatted += "<|eot_id|>\n"
+    return formatted
+
+
 def format_chatter_chat(
     messages,
     start_time=datetime.datetime.now(),
     offset_hours=5,
-    user_name="Hudson",
-    assistant_name="NeverUsedDC",
+    user_name="User",
+    assistant_name="Bot",
     system_name="System",
 ):
     formatted = ""

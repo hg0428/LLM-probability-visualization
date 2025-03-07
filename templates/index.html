@@ -478,6 +478,75 @@
 							<span class="setting-hint">(alternatives per token)</span>
 						</div>
 					</div>
+					<div class="settings-group-header">
+						<h3
+							title="Controls the chat template. May not apply to all template formats"
+						>
+							Chat Template Control
+						</h3>
+						<label class="toggle-switch" title="Enable/disable custom template controls">
+							<input type="checkbox" id="toggle-custom-template" checked />
+							<span class="toggle-slider"></span>
+						</label>
+					</div>
+					<div class="settings-group" id="chat-template-group">
+						<div class="setting">
+							<label
+								for="user-role-name"
+								title="The role name for the user."
+								>User Role Name:</label
+							>
+							<input
+								type="text"
+								id="user-role-name"
+								value="user"
+							/>
+							<span class="setting-hint">(default: user)</span
+							>
+						</div>
+						<div class="setting">
+							<label
+								for="assistant-role-name"
+								title="The role name for the assistant."
+								>Assistant Role Name:</label
+							>
+							<input
+								type="text"
+								id="assistant-role-name"
+								value="assistant"
+							/>
+							<span class="setting-hint">(default: assistant)</span
+							>
+						</div>
+						<div class="setting">
+							<label
+								for="system-role-name"
+								title="The role name for the system."
+								>System Role Name:</label
+							>
+							<input
+								type="text"
+								id="system-role-name"
+								value="system"
+							/>
+							<span class="setting-hint">(default: system)</span
+							>
+						</div>
+						<div class="setting">
+							<label
+								for="system-message"
+								title="System message."
+								>System Message:</label
+							>
+							<input
+								type="text"
+								id="system-message"
+								value=""
+							/>
+							<span class="setting-hint">(default: none)</span
+							>
+						</div>
+					</div>
 				</div>
 			</div>
 

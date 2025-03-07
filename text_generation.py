@@ -265,7 +265,6 @@ def generate_text(
                 model,
                 model_format,
             )
-            print(end)
             if end == True:
                 if stashed:
                     yield stashed[0]

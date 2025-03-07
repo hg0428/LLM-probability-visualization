@@ -66,19 +66,19 @@ MODELS = {
         "name": "/Users/hudsongouge/.ollama/models/blobs/sha256-74701a8c35f6c8d9a4b91f3f3497643001d63e0c7a84e085bed452548fa88d45",
         "type": "llama.cpp",
         "family": "llama3",
-        "format": "llama",
+        "format": "llama3",
     },
     "Llama3.2-3B": {
         "name": "/Users/hudsongouge/.ollama/models/blobs/sha256-dde5aa3fc5ffc17176b5e8bdc82f587b24b2678c6c66101bf7da77af9f7ccdff",
         "type": "llama.cpp",
         "family": "llama3",
-        "format": "llama",
+        "format": "llama3",
     },
     "Llama3.1-8B": {
         "name": "/Users/hudsongouge/.ollama/models/blobs/sha256-4f6dc812262ac5e1a74791c2a86310ebba1aa1804fa3cd1c216f5547a620d2f2",
         "type": "llama.cpp",
         "family": "llama3",
-        "format": "llama",
+        "format": "llama3",
     },
     "Chatter-70M": {
         "name": "/Users/hudsongouge/.cache/lm-studio/models/Chatter/chatter-70m/model_q4_k_m.gguf",
@@ -312,6 +312,13 @@ def handle_generate(data):
     xtc_threshold = data.get("xtc_threshold", 0.2)
     xtc_probability = data.get("xtc_probability", 0.5)
     truncation_enabled = data.get("truncation_enabled", True)
+    custom_template_enabled = data.get("custom_template_enabled", False)
+    user_role_name = data.get("user_role_name", "user")
+    assistant_role_name = data.get("assistant_role_name", "assistant")
+    system_role_name = data.get("system_role_name", "system")
+    system_message = data.get("system_message", "")
+    if system_message:
+        chat_history = [{"role": "system", "content": system_message}, *chat_history]
 
     try:
         model, tokenizer = get_model_and_tokenizer(model_name)
@@ -357,6 +364,9 @@ def handle_generate(data):
                 primary_model_name,
                 model_family,
                 model_format,
+                user_role_name,
+                assistant_role_name,
+                system_role_name,
             )
         else:
             prompt = data.get("prompt", "")
