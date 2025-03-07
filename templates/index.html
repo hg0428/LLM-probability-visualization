@@ -107,15 +107,14 @@
 						<h3
 							title="Combine multiple models from the same family by summing their logits with different weights"
 						>
-							Model Logit Summing
+							Model Probability Averaging
 						</h3>
 						<label
 							class="toggle-switch"
-							title="Enable/disable model logit summing"
+							title="Enable/disable model probability averaging"
 						>
 							<input type="checkbox" id="toggle-logit-sum" />
 							<span class="toggle-slider"></span>
-							<span class="toggle-label">Enable</span>
 						</label>
 					</div>
 
@@ -131,7 +130,7 @@
 						<div class="setting">
 							<label
 								for="model-family-select"
-								title="Select the model family to use for logit summing. Only models from the same family can be combined."
+								title="Select the model family to use for probability averaging. Only models from the same family can be combined."
 								>Model Family:</label
 							>
 							<select id="model-family-select">

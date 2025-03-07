@@ -125,13 +125,13 @@ class MultiModelWrapper:
     
     def __call__(self, input_ids: torch.LongTensor, chat_messages=None):
         """
-        Forward pass that combines logits from all models according to their weights.
+        Forward pass that combines models by averaging their probabilities according to weights.
         
         Args:
             input_ids: Tokenized input for the primary model
             chat_messages: Optional chat messages (not used in this simplified version)
         """
-        combined_logits = None
+        combined_probs = None
         total_weight = sum(weight for _, weight in self.models_with_weights)
         
         # Standard processing - use the same input_ids for all models
@@ -139,14 +139,22 @@ class MultiModelWrapper:
             # Get logits from this model
             model_logits = model(input_ids)
             
+            # Convert logits to probabilities
+            model_probs = torch.softmax(model_logits, dim=-1)
+            
             # Normalize the weight
             normalized_weight = weight / total_weight
             
-            # Add weighted logits to the combined logits
-            if combined_logits is None:
-                combined_logits = model_logits * normalized_weight
+            # Add weighted probabilities to the combined probabilities
+            if combined_probs is None:
+                combined_probs = model_probs * normalized_weight
             else:
-                combined_logits += model_logits * normalized_weight
+                combined_probs += model_probs * normalized_weight
+        
+        # Convert back to logits for compatibility with the rest of the pipeline
+        # Using a small epsilon to avoid log(0)
+        epsilon = 1e-10
+        combined_logits = torch.log(combined_probs + epsilon)
         
         return combined_logits
     
