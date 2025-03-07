@@ -1,5 +1,13 @@
 import datetime
 import random
+from typing import Callable
+import re
+
+
+chatter_message_header_pattern = re.compile(r"\n.+\ at\ \d{4}-\d{2}-\d{2}T")
+chatter_message_header_pattern_partial = re.compile(
+    r"\n[^\n]*(?: at(?: \d{4}(-\d{2}){0,2})?)?$"
+)
 
 
 def format_chatter_timestamp(dt, offset_hours=5):
@@ -14,6 +22,24 @@ def format_chatter_timestamp(dt, offset_hours=5):
         + ":"
         + dt_local.strftime("%z")[3:]
     )
+
+
+def check_end_of_message(
+    next_token_id, content, model, model_format
+) -> bool | None:  # None means maybe
+    if model_format == "chatter":
+        match = re.search(chatter_message_header_pattern, content)
+        if match:
+            return True
+        elif re.search(chatter_message_header_pattern_partial, content):
+            return None
+        return False
+        #     content = content[: match.start()]
+    else:
+        return next_token_id in [
+            model.eos_token_id,
+            model.pad_token_id,
+        ]
 
 
 def format_chat_history(
@@ -40,7 +66,7 @@ def format_chat_history(
     return formatted
 
 
-def format_qwen_chat(messages):
+def format_chatml_chat(messages):
     """Format chat history for Qwen models."""
     formatted = ""
     for msg in messages:

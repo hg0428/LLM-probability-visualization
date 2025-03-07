@@ -2,7 +2,7 @@ import torch
 import torch.quantization
 import time
 import string
-from chat_templates import format_chat_history
+from chat_templates import format_chat_history, check_end_of_message
 from itertools import count
 from uuid import uuid4
 import random
@@ -105,6 +105,7 @@ def generate_text(
     xtc_threshold=0.1,
     xtc_probability=0.5,
     chat_messages=None,
+    model_format="chatml",
 ):
     """Generate text and return token alternatives for each position."""
     try:
@@ -114,6 +115,7 @@ def generate_text(
                 model.tokenize(s)[-1] for s in sequence_breaker_strings
             }
         # Tokenize input
+        generated_text = ""
         input_ids = model.tokenize(prompt)
         device = model.device
         sequence_alternatives = []
@@ -122,13 +124,14 @@ def generate_text(
         # Track token frequencies and presence for penalties
         token_frequencies = {}
         token_presence = set()
+        stashed = []
 
         # Generate one token at a time
         for i in range(max_new_tokens):
             # Get model outputs and probabilities
             with torch.inference_mode():
                 # Check if this is a MultiModelWrapper and we have chat messages
-                if hasattr(model, 'model_formats') and chat_messages:
+                if hasattr(model, "model_formats") and chat_messages:
                     logits = model(current_tokens, chat_messages)
                 else:
                     logits = model(current_tokens)
@@ -246,6 +249,7 @@ def generate_text(
                     [token, float(prob.item()), idx.item() == next_token.item()]
                 )
             chosen_token_detokenized = model.detokenize([next_token.item()])
+            generated_text += chosen_token_detokenized
             alternatives.append(
                 [chosen_token_detokenized, probs[0][next_token.item()], True]
             )
@@ -255,7 +259,25 @@ def generate_text(
                 for i, alt in enumerate(alternatives)
                 if alt[0] not in [a[0] for a in alternatives[:i]]
             ]
-            yield chosen_token_detokenized, alternatives
+            end = check_end_of_message(
+                next_token.item(),
+                generated_text,
+                model,
+                model_format,
+            )
+            print(end)
+            if end == True:
+                if stashed:
+                    yield stashed[0]
+                break
+            elif end == False:
+                if stashed:
+                    for token, alternatives in stashed:
+                        yield token, alternatives
+                    stashed.clear()
+                yield chosen_token_detokenized, alternatives
+            elif end == None:
+                stashed.append((chosen_token_detokenized, alternatives))
             if alternatives:
                 sequence_alternatives.append(alternatives)
             # Update token frequencies
@@ -266,15 +288,7 @@ def generate_text(
                 token_id = next_token.item()
                 token_presence.add(token_id)
             # Add token to sequence
-            next_token = next_token
             current_tokens = torch.cat([next_token.unsqueeze(0).unsqueeze(0)], dim=1)
-
-            # Stop if we generate an end token
-            if next_token.item() in [
-                model.eos_token_id,
-                model.pad_token_id,
-            ]:
-                break
 
         if not sequence_alternatives:
             raise ValueError("No valid token alternatives generated")

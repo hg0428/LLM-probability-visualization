@@ -195,7 +195,9 @@ def get_model_and_tokenizer(model_spec):
                     # Check if this model is from the same family as the primary model
                     current_family = MODELS[model_name]["family"]
                     if current_family != model_family:
-                        print(f"Warning: Mixing model families ({model_family} and {current_family}) may cause unexpected results")
+                        print(
+                            f"Warning: Mixing model families ({model_family} and {current_family}) may cause unexpected results"
+                        )
 
                 # Load the individual model
                 if model_name not in loaded_models:
@@ -320,19 +322,22 @@ def handle_generate(data):
         # Format chat history for display/tokenization
         if mode == "chat":
             # For multi-model configurations, use a consistent format based on the primary model
-            if model_name.startswith("{"): 
+            if model_name.startswith("{"):
                 try:
                     # Parse the JSON to get the primary model name
                     import json
+
                     model_config = json.loads(model_name)
                     primary_model_name = model_config["models"][0]["name"]
-                    
+
                     # Get the primary model's format information
                     primary_model_config = MODELS[primary_model_name]
                     model_family = primary_model_config["family"]
                     model_format = primary_model_config["format"]
-                    
-                    print(f"Using {primary_model_name}'s format ({model_format}) for multi-model chat")
+
+                    print(
+                        f"Using {primary_model_name}'s format ({model_format}) for multi-model chat"
+                    )
                 except (json.JSONDecodeError, KeyError, IndexError) as e:
                     print(f"Error parsing multi-model config: {e}")
                     # Fallback to chatml format which is widely supported
@@ -382,6 +387,7 @@ def handle_generate(data):
             xtc_threshold,
             xtc_probability,
             chat_history,
+            model_format,
         ):
             if session["generating"] != generation_id:
                 return
