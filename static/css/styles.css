@@ -65,6 +65,19 @@ main {
 	border-bottom-right-radius: 12px;
 }
 
+.delete-message-button {
+	display: none;
+	color: red;
+	position: absolute;
+	min-width: 0;
+	min-height: 0;
+	width: 48px;
+	height: 48px;
+	padding: 8px;
+}
+.delete-message-button:hover {
+	filter: contrast(1.05) saturate(1.25);
+}
 .message {
 	margin-bottom: 15px;
 	padding: 10px 15px;
@@ -72,6 +85,10 @@ main {
 	max-width: 80%;
 	width: fit-content;
 	line-height: 1.4;
+	position: relative;
+}
+.message:hover .delete-message-button {
+	display: block;
 }
 
 .message.user {
@@ -80,12 +97,24 @@ main {
 	margin-right: 0;
 	border: 1px solid #bfdbfe;
 }
+.message.user .delete-message-button {
+	background: #e3f2fd;
+	border: 1px solid #bfdbfe;
+	bottom: -32px;
+	left: -32px;
+}
 
 .message.assistant {
 	background: #eef2ff;
 	margin-left: 0;
 	margin-right: auto;
 	border: 1px solid #e0e7ff;
+}
+.message.assistant .delete-message-button {
+	background: #eef2ff;
+	border: 1px solid #e0e7ff;
+	top: -32px;
+	right: -32px;
 }
 
 .confidence-indicator {
@@ -499,19 +528,20 @@ button:hover {
 	padding: 8px;
 	border-radius: 4px;
 	background-color: #f9fafb;
+	flex-direction: row;
+	flex-wrap: wrap;
 }
 
 .model-weight-entry select {
-	flex: 2;
+	flex: 5;
 }
 
 .model-weight-entry input[type="number"] {
 	flex: 1;
-	min-width: 60px;
 }
 
 .small-button {
-	padding: 4px 8px;
+	padding: 4px;
 	border-radius: 4px;
 	border: 1px solid #e5e7eb;
 	background-color: #f9fafb;
@@ -525,10 +555,15 @@ button:hover {
 
 .remove-model-button {
 	color: #ef4444;
-	padding: 4px 8px;
+	padding: 4px;
 	border: none;
 	background: transparent;
 	cursor: pointer;
+	display: inline-block;
+	flex: 1;
+	aspect-ratio: 1;
+	height: auto;
+	min-width: 0;
 }
 
 .remove-model-button:hover {

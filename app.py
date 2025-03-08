@@ -81,7 +81,7 @@ MODELS = {
         "format": "llama3",
     },
     "Chatter-70M": {
-        "name": "/Users/hudsongouge/.cache/lm-studio/models/Chatter/chatter-70m/model_q4_k_m.gguf",
+        "name": "/Users/hudsongouge/.cache/lm-studio/models/Chatter/chatter-70m/model-Q8_0.gguf",
         "type": "llama.cpp",
         "family": "llama2",
         "format": "chatter",

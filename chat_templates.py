@@ -11,6 +11,8 @@ chatter_message_header_pattern_partial = re.compile(
 
 
 def format_chatter_timestamp(dt, offset_hours=5):
+    if not isinstance(dt, datetime.datetime):
+        dt = datetime.datetime.fromisoformat(dt)
     # Convert to target timezone
     target_tz = datetime.timezone(datetime.timedelta(hours=offset_hours))
     dt_local = dt.astimezone(target_tz)
@@ -156,11 +158,14 @@ def format_chatter_chat(
             name = user_name
         elif role == "assistant":
             name = assistant_name
-        formatted += f"{name} at {format_chatter_timestamp(start_time + datetime.timedelta(seconds=offset_seconds), offset_hours, )}:\n{content}"
+        time = msg.get("time", start_time + datetime.timedelta(seconds=offset_seconds))
+        print(time)
+        formatted += (
+            f"{name} at {format_chatter_timestamp(time, offset_hours)}:\n{content}"
+        )
         if not msg.get("partial", None):
             formatted += "\n"
         offset_seconds += random.randint(0, 30)
-    return formatted
     return formatted
 
 
