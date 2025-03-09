@@ -400,6 +400,7 @@ def handle_generate(data):
             xtc_probability,
             chat_history,
             model_format,
+            allow_name=assistant_role_name,
         ):
             if session["generating"] != generation_id:
                 return

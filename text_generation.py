@@ -106,6 +106,7 @@ def generate_text(
     xtc_probability=0.5,
     chat_messages=None,
     model_format="chatml",
+    allow_name=None,
 ):
     """Generate text and return token alternatives for each position."""
     try:
@@ -264,6 +265,7 @@ def generate_text(
                 generated_text,
                 model,
                 model_format,
+                allow_name,
             )
             if end == True:
                 if stashed:

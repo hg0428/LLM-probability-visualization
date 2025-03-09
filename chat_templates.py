@@ -27,11 +27,13 @@ def format_chatter_timestamp(dt, offset_hours=5):
 
 
 def check_end_of_message(
-    next_token_id, content, model, model_format
+    next_token_id, content, model, model_format, allow_name=None
 ) -> bool | None:  # None means maybe
     if model_format == "chatter":
         match = re.search(chatter_message_header_pattern, content)
-        if match:
+        if match and not re.search(
+            rf"\n{allow_name}(?: at(?: \d{4}(-\d{2}){0,2})?)?$", content
+        ):
             return True
         elif re.search(chatter_message_header_pattern_partial, content):
             return None
