@@ -19,7 +19,7 @@ class LlamaTokenizerWrapper:
 
 
 class LlamaWrapper:
-    def __init__(self, model_path: str, n_gpu_layers: int = -1, n_ctx: int = 2048):
+    def __init__(self, model_path: str, n_gpu_layers: int = -1, n_ctx: int = 8192):
         self.model = Llama(
             model_path=model_path,
             n_gpu_layers=n_gpu_layers,
@@ -95,82 +95,92 @@ class MultiModelWrapper:
     A wrapper that combines multiple models with the same vocabulary and sums their logits
     with specified weights to generate text.
     """
-    def __init__(self, models_with_weights_and_metadata: List[Tuple[object, float, dict]]):
+
+    def __init__(
+        self, models_with_weights_and_metadata: List[Tuple[object, float, dict]]
+    ):
         """
         Initialize the multi-model wrapper.
-        
+
         Args:
             models_with_weights_and_metadata: List of tuples containing (model, weight, metadata) triplets
                 where metadata is a dict with keys like 'family', 'format', etc.
         """
         if not models_with_weights_and_metadata:
             raise ValueError("At least one model must be provided")
-        
+
         self.models_with_weights_and_metadata = models_with_weights_and_metadata
-        self.primary_model = models_with_weights_and_metadata[0][0]  # Use the first model as primary for tokenization
-        
+        self.primary_model = models_with_weights_and_metadata[0][
+            0
+        ]  # Use the first model as primary for tokenization
+
         # Extract just the models and weights for easier access
-        self.models_with_weights = [(model, weight) for model, weight, _ in models_with_weights_and_metadata]
-        
+        self.models_with_weights = [
+            (model, weight) for model, weight, _ in models_with_weights_and_metadata
+        ]
+
         # Store model formats for chat formatting
-        self.model_formats = {id(model): metadata for model, _, metadata in models_with_weights_and_metadata}
-        
+        self.model_formats = {
+            id(model): metadata
+            for model, _, metadata in models_with_weights_and_metadata
+        }
+
         # Use the primary model's tokenizer and special tokens
         self.device = self.primary_model.device
         self.eos_token_id = self.primary_model.eos_token_id
         self.pad_token_id = self.primary_model.pad_token_id
-        
+
         # Store primary model metadata
         self.primary_metadata = self.model_formats[id(self.primary_model)]
-    
+
     def __call__(self, input_ids: torch.LongTensor, chat_messages=None):
         """
         Forward pass that combines models by averaging their probabilities according to weights.
-        
+
         Args:
             input_ids: Tokenized input for the primary model
             chat_messages: Optional chat messages (not used in this simplified version)
         """
         combined_probs = None
         total_weight = sum(weight for _, weight in self.models_with_weights)
-        
+
         # Standard processing - use the same input_ids for all models
         for model, weight in self.models_with_weights:
             # Get logits from this model
             model_logits = model(input_ids)
-            
+
             # Convert logits to probabilities
             model_probs = torch.softmax(model_logits, dim=-1)
-            
+
             # Normalize the weight
             normalized_weight = weight / total_weight
-            
+
             # Add weighted probabilities to the combined probabilities
             if combined_probs is None:
                 combined_probs = model_probs * normalized_weight
             else:
                 combined_probs += model_probs * normalized_weight
-        
+
         # Convert back to logits for compatibility with the rest of the pipeline
         # Using a small epsilon to avoid log(0)
         epsilon = 1e-10
         combined_logits = torch.log(combined_probs + epsilon)
-        
+
         return combined_logits
-    
+
     def reset(self):
         """Reset all models."""
         for model, _ in self.models_with_weights:
             model.reset()
-    
+
     def tokenize(self, text):
         """Use the primary model's tokenizer."""
         return self.primary_model.tokenize(text)
-    
+
     def detokenize(self, tokens):
         """Use the primary model's detokenizer."""
         return self.primary_model.detokenize(tokens)
-    
+
     def to(self, device):
         """Move all models to the specified device."""
         for i, (model, weight) in enumerate(self.models_with_weights):

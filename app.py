@@ -16,6 +16,7 @@ import random
 import json
 from text_generation import benchmark_generation, generate_text
 from wrapper import LlamaWrapper, TransformersWrapper, MultiModelWrapper
+import json
 
 
 class StopOnTokens(StoppingCriteria):
@@ -32,129 +33,142 @@ class StopOnTokens(StoppingCriteria):
 # Available models
 MODELS = {
     # "Qwen2.5-0.5B": {"name": "Qwen/Qwen2.5-0.5B-Instruct", "type": "transformers"},
-    "Qwen2.5-0.5B": {
-        "name": "/Users/hudsongouge/.ollama/models/blobs/sha256-fa4d41b65761ed565cac6b5f62e35135d050408b033114a128ab308c02b2e83a",
+    # "Qwen2.5-0.5B": {
+    #     "name": "/Users/hudsongouge/.ollama/models/blobs/sha256-fa4d41b65761ed565cac6b5f62e35135d050408b033114a128ab308c02b2e83a",
+    #     "type": "llama.cpp",
+    #     "family": "qwen2.5",
+    #     "format": "chatml",
+    # },
+    # "Qwen2.5-3B": {
+    #     "name": "/Users/hudsongouge/.ollama/models/blobs/sha256-5ee4f07cdb9beadbbb293e85803c569b01bd37ed059d2715faa7bb405f31caa6",
+    #     "type": "llama.cpp",
+    #     "family": "qwen2.5",
+    #     "format": "chatml",
+    # },
+    # "Qwen2.5-7B": {
+    #     "name": "/Users/hudsongouge/.cache/lm-studio/models/qwen2.5/qwen2.5-7b-GGUF/qwen2.5-7b.gguf",
+    #     "type": "llama.cpp",
+    #     "family": "qwen2.5",
+    #     "format": "chatml",
+    # },
+    # "Qwen2.5-14B": {
+    #     "name": "/Users/hudsongouge/.cache/lm-studio/models/qwen2.5/qwen2.5-14b-GGUF/qwen2.5-14b.gguf",
+    #     "type": "llama.cpp",
+    #     "family": "qwen2.5",
+    #     "format": "chatml",
+    # },
+    # "Qwen2.5-32B": {
+    #     "name": "/Users/hudsongouge/.cache/lm-studio/models/qwen2.5/qwen2.5-32b-GGUF/qwen2.5-32b.gguf",
+    #     "type": "llama.cpp",
+    #     "family": "qwen2.5",
+    #     "format": "chatml",
+    # },
+    # "Llama3.2-1B": {
+    #     "name": "/Users/hudsongouge/.ollama/models/blobs/sha256-74701a8c35f6c8d9a4b91f3f3497643001d63e0c7a84e085bed452548fa88d45",
+    #     "type": "llama.cpp",
+    #     "family": "llama3",
+    #     "format": "llama3",
+    # },
+    # "Llama3.2-3B": {
+    #     "name": "/Users/hudsongouge/.ollama/models/blobs/sha256-dde5aa3fc5ffc17176b5e8bdc82f587b24b2678c6c66101bf7da77af9f7ccdff",
+    #     "type": "llama.cpp",
+    #     "family": "llama3",
+    #     "format": "llama3",
+    # },
+    # "Llama3.1-8B": {
+    #     "name": "/Users/hudsongouge/.ollama/models/blobs/sha256-4f6dc812262ac5e1a74791c2a86310ebba1aa1804fa3cd1c216f5547a620d2f2",
+    #     "type": "llama.cpp",
+    #     "family": "llama3",
+    #     "format": "llama3",
+    # },
+    # "Chatter-70M": {
+    #     "name": "/Users/hudsongouge/.cache/lm-studio/models/Chatter/chatter-70m/model-Q8_0.gguf",
+    #     "type": "llama.cpp",
+    #     "family": "llama2",
+    #     "format": "chatter",
+    # },
+    # "Granite3-8B": {
+    #     "name": "/Users/hudsongouge/.cache/lm-studio/models/granite3-dense/granite3-dense-8b-GGUF/granite3-dense-8b.gguf",
+    #     "type": "llama.cpp",
+    #     "family": "granite3",
+    #     "format": "granite3",
+    # },
+    # "Gemma2-2B": {
+    #     "name": "/Users/hudsongouge/.ollama/models/blobs/sha256-7462734796d67c40ecec2ca98eddf970e171dbb6b370e43fd633ee75b69abe1b",
+    #     "type": "llama.cpp",
+    #     "family": "gemma2",
+    #     "format": "gemma2",
+    # },
+    # "Gemma2-9B": {
+    #     "name": "/Users/hudsongouge/.cache/lm-studio/models/gemma2/gemma2-9b-GGUF/gemma2-9b.gguf",
+    #     "type": "llama.cpp",
+    #     "family": "gemma2",
+    #     "format": "gemma2",
+    # },
+    # "Gemma2-27B": {
+    #     "name": "/Users/hudsongouge/.cache/lm-studio/models/gemma2/gemma2-27b-GGUF/gemma2-27b.gguf",
+    #     "type": "llama.cpp",
+    #     "family": "gemma2",
+    #     "format": "gemma2",
+    # },
+    # "TinyLLM-10M": {
+    #     "name": "/Users/hudsongouge/.cache/lm-studio/models/aimlresearch2023/Tiny-LLM-Q8_0-GGUF/tiny-llm-q8_0.gguf",
+    #     "type": "llama.cpp",
+    #     "family": "llama2",
+    #     "format": "llama2",
+    # },
+    # "Llama3.1-8B-Uncensored": {
+    #     "name": "/Users/hudsongouge/.cache/lm-studio/models/Hudson-llama3.1-uncensored/Hudson/llama3.1-uncensored-8b-GGUF/llama3.1-uncensored-8b.gguf",
+    #     "type": "llama.cpp",
+    #     "family": "llama3",
+    #     "format": "llama3",
+    # },
+    # "Llama3.2-1B-Math": {
+    #     "name": "/Users/hudsongouge/.cache/lm-studio/models/llama3.2-math/llama3.2-math-1b-GGUF/llama3.2-math-1b.gguf",
+    #     "type": "llama.cpp",
+    #     "family": "llama3",
+    #     "format": "llama3",
+    # },
+    # "Llama2-7B": {
+    #     "name": "/Users/hudsongouge/.cache/lm-studio/models/TheBloke/Llama-2-7B-Chat-GGUF/llama-2-7b-chat.Q4_K_S.gguf",
+    #     "type": "llama.cpp",
+    #     "family": "llama2",
+    #     "format": "llama2",
+    # },
+    # "Granite3.2-8B": {
+    #     "name": "/Users/hudsongouge/.cache/lm-studio/models/Triangle104/granite-3.2-8b-instruct-preview-Q4_K_M-GGUF/granite-3.2-8b-instruct-preview-q4_k_m.gguf",
+    #     "type": "llama.cpp",
+    #     "family": "granite3",
+    #     "format": "granite3",
+    # },
+    # "OlympicCoder-7B": {
+    #     "name": "/Users/hudsongouge/.cache/lm-studio/models/lmstudio-community/OlympicCoder-7B-GGUF/OlympicCoder-7B-Q4_K_M.gguf",
+    #     "type": "llama.cpp",
+    #     "family": "qwen2.5",
+    #     "format": "chatml",
+    # },
+    "Qwen3-0.6B": {
+        "name": "/Users/hudsongouge/.cache/lm-studio/models/lmstudio-community/Qwen3-0.6B-GGUF/Qwen3-0.6B-Q8_0.gguf",
         "type": "llama.cpp",
-        "family": "qwen2.5",
+        "family": "qwen3",
         "format": "chatml",
-    },
-    "Qwen2.5-3B": {
-        "name": "/Users/hudsongouge/.ollama/models/blobs/sha256-5ee4f07cdb9beadbbb293e85803c569b01bd37ed059d2715faa7bb405f31caa6",
-        "type": "llama.cpp",
-        "family": "qwen2.5",
-        "format": "chatml",
-    },
-    "Qwen2.5-7B": {
-        "name": "/Users/hudsongouge/.cache/lm-studio/models/qwen2.5/qwen2.5-7b-GGUF/qwen2.5-7b.gguf",
-        "type": "llama.cpp",
-        "family": "qwen2.5",
-        "format": "chatml",
-    },
-    "Qwen2.5-14B": {
-        "name": "/Users/hudsongouge/.cache/lm-studio/models/qwen2.5/qwen2.5-14b-GGUF/qwen2.5-14b.gguf",
-        "type": "llama.cpp",
-        "family": "qwen2.5",
-        "format": "chatml",
-    },
-    "Qwen2.5-32B": {
-        "name": "/Users/hudsongouge/.cache/lm-studio/models/qwen2.5/qwen2.5-32b-GGUF/qwen2.5-32b.gguf",
-        "type": "llama.cpp",
-        "family": "qwen2.5",
-        "format": "chatml",
-    },
-    "Llama3.2-1B": {
-        "name": "/Users/hudsongouge/.ollama/models/blobs/sha256-74701a8c35f6c8d9a4b91f3f3497643001d63e0c7a84e085bed452548fa88d45",
-        "type": "llama.cpp",
-        "family": "llama3",
-        "format": "llama3",
-    },
-    "Llama3.2-3B": {
-        "name": "/Users/hudsongouge/.ollama/models/blobs/sha256-dde5aa3fc5ffc17176b5e8bdc82f587b24b2678c6c66101bf7da77af9f7ccdff",
-        "type": "llama.cpp",
-        "family": "llama3",
-        "format": "llama3",
-    },
-    "Llama3.1-8B": {
-        "name": "/Users/hudsongouge/.ollama/models/blobs/sha256-4f6dc812262ac5e1a74791c2a86310ebba1aa1804fa3cd1c216f5547a620d2f2",
-        "type": "llama.cpp",
-        "family": "llama3",
-        "format": "llama3",
-    },
-    "Chatter-70M": {
-        "name": "/Users/hudsongouge/.cache/lm-studio/models/Chatter/chatter-70m/model-Q8_0.gguf",
-        "type": "llama.cpp",
-        "family": "llama2",
-        "format": "chatter",
-    },
-    "Granite3-8B": {
-        "name": "/Users/hudsongouge/.cache/lm-studio/models/granite3-dense/granite3-dense-8b-GGUF/granite3-dense-8b.gguf",
-        "type": "llama.cpp",
-        "family": "granite3",
-        "format": "granite3",
-    },
-    "Gemma2-2B": {
-        "name": "/Users/hudsongouge/.ollama/models/blobs/sha256-7462734796d67c40ecec2ca98eddf970e171dbb6b370e43fd633ee75b69abe1b",
-        "type": "llama.cpp",
-        "family": "gemma2",
-        "format": "gemma2",
-    },
-    "Gemma2-9B": {
-        "name": "/Users/hudsongouge/.cache/lm-studio/models/gemma2/gemma2-9b-GGUF/gemma2-9b.gguf",
-        "type": "llama.cpp",
-        "family": "gemma2",
-        "format": "gemma2",
-    },
-    "Gemma2-27B": {
-        "name": "/Users/hudsongouge/.cache/lm-studio/models/gemma2/gemma2-27b-GGUF/gemma2-27b.gguf",
-        "type": "llama.cpp",
-        "family": "gemma2",
-        "format": "gemma2",
-    },
-    "TinyLLM-10M": {
-        "name": "/Users/hudsongouge/.cache/lm-studio/models/aimlresearch2023/Tiny-LLM-Q8_0-GGUF/tiny-llm-q8_0.gguf",
-        "type": "llama.cpp",
-        "family": "llama2",
-        "format": "llama2",
-    },
-    "Llama3.1-8B-Uncensored": {
-        "name": "/Users/hudsongouge/.cache/lm-studio/models/Hudson-llama3.1-uncensored/Hudson/llama3.1-uncensored-8b-GGUF/llama3.1-uncensored-8b.gguf",
-        "type": "llama.cpp",
-        "family": "llama3",
-        "format": "llama3",
-    },
-    "Llama3.2-1B-Math": {
-        "name": "/Users/hudsongouge/.cache/lm-studio/models/llama3.2-math/llama3.2-math-1b-GGUF/llama3.2-math-1b.gguf",
-        "type": "llama.cpp",
-        "family": "llama3",
-        "format": "llama3",
-    },
-    "Llama2-7B": {
-        "name": "/Users/hudsongouge/.cache/lm-studio/models/TheBloke/Llama-2-7B-Chat-GGUF/llama-2-7b-chat.Q4_K_S.gguf",
-        "type": "llama.cpp",
-        "family": "llama2",
-        "format": "llama2",
-    },
-    "Granite3.2-8B": {
-        "name": "/Users/hudsongouge/.cache/lm-studio/models/Triangle104/granite-3.2-8b-instruct-preview-Q4_K_M-GGUF/granite-3.2-8b-instruct-preview-q4_k_m.gguf",
-        "type": "llama.cpp",
-        "family": "granite3",
-        "format": "granite3",
-    },
+    }
 }
 
 # Model families for compatibility
 MODEL_FAMILIES = {
-    "qwen2.5": [
-        "Qwen2.5-0.5B",
-        "Qwen2.5-3B",
-        "Qwen2.5-7B",
-        "Qwen2.5-14B",
-        "Qwen2.5-32B",
-    ],
-    "llama3": ["Llama3.2-1B", "Llama3.2-3B", "Llama3.2-1B-Math"],
-    "granite3": ["Granite3-dense-8B", "Granite3.2-8B"],
-    "llama2": ["Chatter-70M", "Llama2-7B", "TinyLLM-10M"],
-    "gemma2": ["Gemma2-2B", "Gemma2-9B", "Gemma2-27B"],
+    # "qwen2.5": [
+    #     "Qwen2.5-0.5B",
+    #     "Qwen2.5-3B",
+    #     "Qwen2.5-7B",
+    #     "Qwen2.5-14B",
+    #     "Qwen2.5-32B",
+    # ],
+    # "llama3": ["Llama3.2-1B", "Llama3.2-3B", "Llama3.2-1B-Math"],
+    # "granite3": ["Granite3-dense-8B", "Granite3.2-8B"],
+    # "llama2": ["Chatter-70M", "Llama2-7B", "TinyLLM-10M"],
+    # "gemma2": ["Gemma2-2B", "Gemma2-9B", "Gemma2-27B"],
+    "qwen3": ["Qwen3-0.6B"]
 }
 
 app = Flask(__name__)
@@ -290,7 +304,7 @@ def handle_generate(data):
     generation_id = uuid4()
     session["generating"] = generation_id
     mode = data.get("mode", "chat")
-    model_name = data.get("model_name", "Qwen2.5-0.5B")
+    model_name = data.get("model_name", "Qwen3-0.6B")
     top_k = data.get("top_k", 0)
     num_show = data.get("num_show", 12)
     temperature = data.get("temperature", 0.7)
@@ -323,38 +337,37 @@ def handle_generate(data):
 
         # Get chat history and prompt
         chat_history = data.get("chat_history", []) if mode == "chat" else None
+        if model_name.startswith("{"):
+            try:
+                # Parse the JSON to get the primary model name
+
+                model_config = json.loads(model_name)
+                primary_model_name = model_config["models"][0]["name"]
+
+                # Get the primary model's format information
+                primary_model_config = MODELS[primary_model_name]
+                model_family = primary_model_config["family"]
+                model_format = primary_model_config["format"]
+
+                print(
+                    f"Using {primary_model_name}'s format ({model_format}) for multi-model chat"
+                )
+            except (json.JSONDecodeError, KeyError, IndexError) as e:
+                print(f"Error parsing multi-model config: {e}")
+                # Fallback to chatml format which is widely supported
+                model_family = "default"
+                model_format = "chatml"
+                primary_model_name = "unknown"
+        else:
+            # Single model configuration
+            model_config = MODELS[model_name]
+            model_family = model_config["family"]
+            model_format = model_config["format"]
+            primary_model_name = model_name
 
         # Format chat history for display/tokenization
         if mode == "chat":
             # For multi-model configurations, use a consistent format based on the primary model
-            if model_name.startswith("{"):
-                try:
-                    # Parse the JSON to get the primary model name
-                    import json
-
-                    model_config = json.loads(model_name)
-                    primary_model_name = model_config["models"][0]["name"]
-
-                    # Get the primary model's format information
-                    primary_model_config = MODELS[primary_model_name]
-                    model_family = primary_model_config["family"]
-                    model_format = primary_model_config["format"]
-
-                    print(
-                        f"Using {primary_model_name}'s format ({model_format}) for multi-model chat"
-                    )
-                except (json.JSONDecodeError, KeyError, IndexError) as e:
-                    print(f"Error parsing multi-model config: {e}")
-                    # Fallback to chatml format which is widely supported
-                    model_family = "default"
-                    model_format = "chatml"
-                    primary_model_name = "unknown"
-            else:
-                # Single model configuration
-                model_config = MODELS[model_name]
-                model_family = model_config["family"]
-                model_format = model_config["format"]
-                primary_model_name = model_name
             if system_message:
                 chat_history = [
                     {"role": "system", "content": system_message},
@@ -372,6 +385,7 @@ def handle_generate(data):
             )
         else:
             prompt = data.get("prompt", "")
+            print(prompt)
         n = 0
         # Generate text with alternatives
         for token, alternatives in generate_text(
@@ -433,5 +447,5 @@ def stop():
 
 if __name__ == "__main__":
     # Pre-load the default model
-    get_model_and_tokenizer("Qwen2.5-0.5B")
+    get_model_and_tokenizer("Qwen3-0.6B")
     socketio.run(app, debug=True, port=5002)

@@ -34,6 +34,10 @@ def check_end_of_message(
         if match and not re.search(
             rf"\n{allow_name}(?: at(?: \d{4}(-\d{2}){0,2})?)?$", content
         ):
+            print(
+                match,
+                re.search(rf"\n{allow_name}(?: at(?: \d{4}(-\d{2}){0,2})?)?$", content),
+            )
             return True
         elif re.search(chatter_message_header_pattern_partial, content):
             return None
@@ -58,7 +62,6 @@ def format_chat_history(
 ):
     """Format chat history according to model's template."""
     print(f"Formatting chat history for model: {model_name}")
-    print(f"Input messages: {messages}")
 
     if model_format == "chatml":
         formatted = format_chatml_chat(
@@ -144,7 +147,7 @@ def format_chatter_chat(
     start_time=datetime.datetime.now(),
     offset_hours=5,
     user_name="User",
-    assistant_name="Bot",
+    assistant_name="Assistant",
     system_name="System",
 ):
     formatted = ""
@@ -161,7 +164,6 @@ def format_chatter_chat(
         elif role == "assistant":
             name = assistant_name
         time = msg.get("time", start_time + datetime.timedelta(seconds=offset_seconds))
-        print(time)
         formatted += (
             f"{name} at {format_chatter_timestamp(time, offset_hours)}:\n{content}"
         )

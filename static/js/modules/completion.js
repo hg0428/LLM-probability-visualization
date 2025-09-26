@@ -8,17 +8,17 @@ export function initializeCompletionHandlers() {
 		.addEventListener("click", generateCompletion);
 }
 
-export async function generateCompletion() {
+export function generateCompletion() {
 	resetTokenMetrics();
 	const completionDisplay = document.getElementById("completion-display");
-
+	console.log(completionDisplay.innerText);
 	const settings = {
-		prompt: completionDisplay.textContent,
+		prompt: completionDisplay.innerText,
 		mode: "completion",
 		...getGenerationSettings(),
 	};
 
-	await generateText(settings);
+	generateText(settings);
 }
 
 export function updateCompletionDisplay(chosen, options) {
