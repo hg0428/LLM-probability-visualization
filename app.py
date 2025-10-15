@@ -152,7 +152,13 @@ MODELS = {
         "type": "llama.cpp",
         "family": "qwen3",
         "format": "chatml",
-    }
+    },
+    "GPT-OSS-20B": {
+        "name": "/Users/hudsongouge/.cache/lm-studio/models/ggml-org/gpt-oss-20b-GGUF/gpt-oss-20b-mxfp4.gguf",
+        "type": "llama.cpp",
+        "family": "gpt-oss",
+        "format": "harmony",
+    },
 }
 
 # Model families for compatibility
@@ -168,7 +174,8 @@ MODEL_FAMILIES = {
     # "granite3": ["Granite3-dense-8B", "Granite3.2-8B"],
     # "llama2": ["Chatter-70M", "Llama2-7B", "TinyLLM-10M"],
     # "gemma2": ["Gemma2-2B", "Gemma2-9B", "Gemma2-27B"],
-    "qwen3": ["Qwen3-0.6B"]
+    "qwen3": ["Qwen3-0.6B"],
+    "gpt-oss": ["GPT-OSS-20B"],
 }
 
 app = Flask(__name__)
@@ -366,6 +373,7 @@ def handle_generate(data):
             primary_model_name = model_name
 
         # Format chat history for display/tokenization
+        harmony_tokens = None
         if mode == "chat":
             # For multi-model configurations, use a consistent format based on the primary model
             if system_message:
@@ -373,7 +381,7 @@ def handle_generate(data):
                     {"role": "system", "content": system_message},
                     *chat_history,
                 ]
-            prompt = format_chat_history(
+            prompt, harmony_tokens = format_chat_history(
                 chat_history,
                 model,
                 primary_model_name,
@@ -415,6 +423,7 @@ def handle_generate(data):
             chat_history,
             model_format,
             allow_name=assistant_role_name,
+            harmony_tokens=harmony_tokens,
         ):
             if session["generating"] != generation_id:
                 return

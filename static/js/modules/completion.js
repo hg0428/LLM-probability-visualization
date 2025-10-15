@@ -3,6 +3,11 @@ import { generateText } from "./socket.js";
 import { createTokenSpan, showModal, getProbabilityColor } from "./utils.js";
 
 export function initializeCompletionHandlers() {
+	const completionDisplay = document.getElementById("completion-display");
+	if (completionDisplay) {
+		completionDisplay.addEventListener("paste", handlePlainTextPaste);
+	}
+
 	document
 		.getElementById("complete-button")
 		.addEventListener("click", generateCompletion);
@@ -11,7 +16,6 @@ export function initializeCompletionHandlers() {
 export function generateCompletion() {
 	resetTokenMetrics();
 	const completionDisplay = document.getElementById("completion-display");
-	console.log(completionDisplay.innerText);
 	const settings = {
 		prompt: completionDisplay.innerText,
 		mode: "completion",
@@ -105,4 +109,29 @@ async function replaceCompletionToken(token, prob, tokenSpan) {
 function getGenerationSettings() {
 	// Implementation moved to settings.js
 	return window.getSettings();
+}
+
+function handlePlainTextPaste(event) {
+	event.preventDefault();
+	const text = event.clipboardData?.getData("text/plain");
+	if (!text) return;
+
+	const selection = window.getSelection();
+	if (!selection || selection.rangeCount === 0) {
+		const target = event.currentTarget;
+		if (target instanceof HTMLElement) {
+			target.textContent += text;
+		}
+		return;
+	}
+
+	const range = selection.getRangeAt(0);
+	range.deleteContents();
+	const textNode = document.createTextNode(text);
+	range.insertNode(textNode);
+
+	range.setStartAfter(textNode);
+	range.collapse(true);
+	selection.removeAllRanges();
+	selection.addRange(range);
 }

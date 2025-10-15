@@ -2,7 +2,7 @@ import torch
 import torch.quantization
 import time
 import string
-from chat_templates import format_chat_history, check_end_of_message
+from chat_templates import check_end_of_message
 from itertools import count
 from uuid import uuid4
 import random
@@ -107,18 +107,25 @@ def generate_text(
     chat_messages=None,
     model_format="chatml",
     allow_name=None,
+    harmony_tokens=None,
 ):
     """Generate text and return token alternatives for each position."""
     try:
         model.reset()
+        device = getattr(model, "device", torch.device("cpu"))
+
         if dry_enabled:
             sequence_breakers = {
                 model.tokenize(s)[-1] for s in sequence_breaker_strings
             }
         # Tokenize input
         generated_text = ""
-        input_ids = model.tokenize(prompt)
-        device = model.device
+        if harmony_tokens is not None:
+            input_ids = torch.tensor([harmony_tokens], dtype=torch.long, device=device)
+        else:
+            input_ids = model.tokenize(prompt)
+            if hasattr(input_ids, "to"):
+                input_ids = input_ids.to(device)
         sequence_alternatives = []
         current_tokens = input_ids
 
