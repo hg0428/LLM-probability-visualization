@@ -38,10 +38,71 @@ export function calculateConfidence(tokens) {
 }
 
 // DOM utilities
-export function createTokenSpan(token, prob, position, messageIndex, onClick) {
+const END_TOKEN_MARKERS = ["<|im_end|>", "<|eot_id|>", "</s>", "<|endoftext|>"];
+
+export function getTokenVisualMetadata(token = "", fallback = token) {
+	const reference = fallback ?? token ?? "";
+	const value = token ?? "";
+	const metadata = {
+		isInvisible: false,
+		placeholder: null,
+		ariaLabel: null,
+		isEnd: false,
+	};
+	const isEmpty = value.length === 0;
+	const whitespaceOnly = value.length > 0 && value.replace(/\s/g, "").length === 0;
+	if (isEmpty || whitespaceOnly) {
+		metadata.isInvisible = true;
+		const source = reference.length ? reference : value;
+		if (source.includes("\n")) {
+			const count = Math.max(1, (source.match(/\n/g) || []).length);
+			metadata.placeholder = count > 1 ? `↵×${count}` : "↵";
+			metadata.ariaLabel = count > 1 ? `${count} newline tokens` : "Newline token";
+		} else if (source.includes("\t")) {
+			const count = Math.max(1, (source.match(/\t/g) || []).length);
+			metadata.placeholder = count > 1 ? `⇥×${count}` : "⇥";
+			metadata.ariaLabel = count > 1 ? `${count} tab tokens` : "Tab token";
+		} else {
+			const count = Math.max(1, source.length);
+			metadata.placeholder = count > 1 ? `␠×${count}` : "␠";
+			metadata.ariaLabel = count > 1 ? `${count} space tokens` : "Space token";
+		}
+	}
+	const normalized = reference.trim();
+	metadata.isEnd = END_TOKEN_MARKERS.some(
+		(marker) => normalized === marker || normalized.endsWith(marker)
+	);
+	return metadata;
+}
+
+export function createTokenSpan(
+	token,
+	prob,
+	position,
+	messageIndex,
+	onClick,
+	fallbackToken = token
+) {
 	const tokenSpan = document.createElement("span");
-	tokenSpan.textContent = token;
 	tokenSpan.className = "token";
+	const metadata = getTokenVisualMetadata(token, fallbackToken);
+	if (metadata.isInvisible) {
+		tokenSpan.classList.add("token-empty");
+		tokenSpan.dataset.placeholder = metadata.placeholder;
+		tokenSpan.innerHTML = "&nbsp;";
+		tokenSpan.dataset.actualToken = token;
+		if (metadata.ariaLabel) {
+			tokenSpan.setAttribute("aria-label", metadata.ariaLabel);
+		}
+	} else {
+		tokenSpan.textContent = token;
+		if (metadata.ariaLabel) {
+			tokenSpan.setAttribute("aria-label", metadata.ariaLabel);
+		}
+	}
+	if (metadata.isEnd) {
+		tokenSpan.classList.add("token-end");
+	}
 	tokenSpan.dataset.position = position;
 	if (messageIndex !== undefined) {
 		tokenSpan.dataset.messageIndex = messageIndex;
@@ -51,14 +112,15 @@ export function createTokenSpan(token, prob, position, messageIndex, onClick) {
 	return tokenSpan;
 }
 
-export function createConfidenceIndicator(confidence) {
+export function createConfidenceIndicator(confidence, tokenCount = null) {
 	const confidenceDiv = document.createElement("div");
 	confidenceDiv.className = "confidence-indicator";
+	const tokenCountText = tokenCount !== null ? ` • ${tokenCount} token${tokenCount !== 1 ? 's' : ''}` : '';
 	confidenceDiv.innerHTML = `
         <div class="confidence-label">Confidence: 
             <span style="color: ${getConfidenceColor(confidence)}">
                 ${getConfidenceLabel(confidence)} (${confidence}%)
-            </span>
+            </span>${tokenCountText}
         </div>
         <div class="confidence-bar">
             <div class="confidence-fill" style="width: ${confidence}%; background-color: ${getConfidenceColor(

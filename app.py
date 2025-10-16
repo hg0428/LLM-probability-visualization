@@ -63,12 +63,12 @@ MODELS = {
     #     "family": "qwen2.5",
     #     "format": "chatml",
     # },
-    # "Llama3.2-1B": {
-    #     "name": "/Users/hudsongouge/.ollama/models/blobs/sha256-74701a8c35f6c8d9a4b91f3f3497643001d63e0c7a84e085bed452548fa88d45",
-    #     "type": "llama.cpp",
-    #     "family": "llama3",
-    #     "format": "llama3",
-    # },
+    "Llama3.2-1B": {
+        "name": "/Users/hudsongouge/.cache/lm-studio/models/lmstudio-community/Llama-3.2-1B-Instruct-GGUF/Llama-3.2-1B-Instruct-Q4_K_M.gguf",
+        "type": "llama.cpp",
+        "family": "llama3",
+        "format": "llama3",
+    },
     # "Llama3.2-3B": {
     #     "name": "/Users/hudsongouge/.ollama/models/blobs/sha256-dde5aa3fc5ffc17176b5e8bdc82f587b24b2678c6c66101bf7da77af9f7ccdff",
     #     "type": "llama.cpp",
@@ -81,12 +81,12 @@ MODELS = {
     #     "family": "llama3",
     #     "format": "llama3",
     # },
-    # "Chatter-70M": {
-    #     "name": "/Users/hudsongouge/.cache/lm-studio/models/Chatter/chatter-70m/model-Q8_0.gguf",
-    #     "type": "llama.cpp",
-    #     "family": "llama2",
-    #     "format": "chatter",
-    # },
+    "Chatter-70M": {
+        "name": "/Users/hudsongouge/.cache/lm-studio/models/Hudson/Chatter-70M/chatter-70m-Q8_0.gguf",
+        "type": "llama.cpp",
+        "family": "llama2",
+        "format": "chatter",
+    },
     # "Granite3-8B": {
     #     "name": "/Users/hudsongouge/.cache/lm-studio/models/granite3-dense/granite3-dense-8b-GGUF/granite3-dense-8b.gguf",
     #     "type": "llama.cpp",
@@ -151,6 +151,24 @@ MODELS = {
         "name": "/Users/hudsongouge/.cache/lm-studio/models/lmstudio-community/Qwen3-0.6B-GGUF/Qwen3-0.6B-Q8_0.gguf",
         "type": "llama.cpp",
         "family": "qwen3",
+        "format": "chatml",
+    },
+    "SmolLM2-135M": {
+        "name": "/Users/hudsongouge/.cache/lm-studio/models/lmstudio-community/SmolLM2-135M-Instruct-GGUF/SmolLM2-135M-Instruct-Q8_0.gguf",
+        "type": "llama.cpp",
+        "family": "smollm2",
+        "format": "chatml",
+    },
+    "SmolLM2-360M": {
+        "name": "/Users/hudsongouge/.cache/lm-studio/models/lmstudio-community/SmolLM2-360M-Instruct-GGUF/SmolLM2-360M-Instruct-Q8_0.gguf",
+        "type": "llama.cpp",
+        "family": "smollm2",
+        "format": "chatml",
+    },
+    "SmolLM2-1.7B": {
+        "name": "/Users/hudsongouge/.cache/lm-studio/models/lmstudio-community/SmolLM2-1.7B-Instruct-GGUF/SmolLM2-1.7B-Instruct-Q4_K_M.gguf",
+        "type": "llama.cpp",
+        "family": "smollm2",
         "format": "chatml",
     },
     "GPT-OSS-20B": {
@@ -316,7 +334,7 @@ def handle_generate(data):
     num_show = data.get("num_show", 12)
     temperature = data.get("temperature", 0.7)
     min_p = data.get("min_p", 0)
-    max_new_tokens = data.get("max_new_tokens", 100)
+    max_new_tokens = data.get("max_new_tokens", 256)
     top_p = data.get("top_p", 0.9)
     repetition_penalty = data.get("repetition_penalty", 1.0)
     frequency_penalty = data.get("frequency_penalty", 0.0)

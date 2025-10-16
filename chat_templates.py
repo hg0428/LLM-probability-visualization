@@ -178,9 +178,7 @@ def format_harmony_chat(
         else:
             harmony_role = Role.USER
 
-        harmony_messages.append(
-            Message.from_role_and_content(harmony_role, content)
-        )
+        harmony_messages.append(Message.from_role_and_content(harmony_role, content))
 
     conversation = Conversation.from_messages(harmony_messages)
     tokens = enc.render_conversation_for_completion(conversation, Role.ASSISTANT)
@@ -222,6 +220,7 @@ def format_chatter_chat(
             formatted += "\n"
         offset_seconds += random.randint(0, 30)
     return formatted
+
 
 def format_default_chat(messages):
     """Default chat formatting."""

@@ -47,6 +47,18 @@ function handleEnd() {
 	state.currentMessageDiv = null;
 	state.isGenerating = false;
 
+	// Mark the last assistant message as complete (non-partial)
+	const history = state.chatHistory;
+	for (let i = history.length - 1; i >= 0; i--) {
+		if (history[i] && history[i].role === "assistant") {
+			history[i].partial = false;
+			break;
+		}
+	}
+
+	// Re-render to ensure UI reflects final state
+	updateChatDisplay();
+
 	// Final TPS update
 	updateTpsDisplay();
 }

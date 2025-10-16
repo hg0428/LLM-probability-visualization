@@ -4,6 +4,7 @@ import {
 	createTokenSpan,
 	createConfidenceIndicator,
 	showModal,
+	getTokenVisualMetadata,
 } from "./utils.js";
 import { getSettings } from "./settings.js";
 
@@ -54,9 +55,9 @@ export async function generateChat() {
 	await generateText(settings);
 }
 
-function deleteMessage(messageDiv, message) {
+function deleteMessage(messageDiv, messageIndex) {
 	messageDiv.remove();
-	state.chatHistory.splice(message.id, 1);
+	state.chatHistory.splice(messageIndex, 1);
 	updateChatDisplay();
 }
 export function updateChatDisplay(chosen, options, messageId) {
@@ -70,8 +71,12 @@ export function updateChatDisplay(chosen, options, messageId) {
 		const currentMessage = state.chatHistory[messageId - (hasSystem ? 1 : 0)];
 		console.log(currentMessage);
 		if (currentMessage && currentMessage.partial) {
-			currentMessage.content += chosen;
-			currentMessage.chosenTokens.push(chosen);
+			// Do not include end tokens in the underlying content/chosenTokens to avoid duplication in prompts
+			const meta = getTokenVisualMetadata(chosen);
+			if (!meta.isEnd) {
+				currentMessage.content += chosen;
+				currentMessage.chosenTokens.push(chosen);
+			}
 			currentMessage.tokenSequence.push(options);
 			currentMessage.time = new Date();
 		}
@@ -96,19 +101,36 @@ export function updateChatDisplay(chosen, options, messageId) {
 
 					const [token, prob, _] = chosenToken;
 
-					token.split("\n").forEach((tokenText, i) => {
-						if (i > 0) {
-							contentWrapper.appendChild(document.createElement("br"));
-						}
+					// Check if token contains newlines
+					if (token.includes("\n")) {
+						const parts = token.split("\n");
+						parts.forEach((part, i) => {
+							if (i > 0) {
+								contentWrapper.appendChild(document.createElement("br"));
+							}
+							if (part.length > 0 || i === 0) {
+								const tokenSpan = createTokenSpan(
+									part,
+									prob,
+									position,
+									messageIndex,
+									() => showTokenOptions(message, position, messageIndex),
+									token
+								);
+								contentWrapper.appendChild(tokenSpan);
+							}
+						});
+					} else {
 						const tokenSpan = createTokenSpan(
-							tokenText,
+							token,
 							prob,
 							position,
 							messageIndex,
-							() => showTokenOptions(message, position)
+							() => showTokenOptions(message, position, messageIndex),
+							token
 						);
 						contentWrapper.appendChild(tokenSpan);
-					});
+					}
 				});
 
 				messageDiv.appendChild(contentWrapper);
@@ -124,7 +146,8 @@ export function updateChatDisplay(chosen, options, messageId) {
 				const avgProb =
 					probabilities.reduce((a, b) => a + b, 0) / probabilities.length;
 				const confidence = Math.round(avgProb * 100);
-				messageDiv.appendChild(createConfidenceIndicator(confidence));
+				const tokenCount = message.tokenSequence.length;
+				messageDiv.appendChild(createConfidenceIndicator(confidence, tokenCount));
 			}
 		} else {
 			messageDiv.textContent = message.content;
@@ -135,7 +158,7 @@ export function updateChatDisplay(chosen, options, messageId) {
   <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
   <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
 </svg>`;
-		deleteMessageButton.onclick = () => deleteMessage(messageDiv, message);
+		deleteMessageButton.onclick = () => deleteMessage(messageDiv, messageIndex);
 		messageDiv.appendChild(deleteMessageButton);
 
 		chatDisplay.appendChild(messageDiv);
@@ -144,9 +167,9 @@ export function updateChatDisplay(chosen, options, messageId) {
 	chatDisplay.scrollTop = chatDisplay.scrollHeight;
 }
 
-function showTokenOptions(message, position) {
-	const alternatives = message.tokenSequence[position];
-	if (!alternatives) return;
+function showTokenOptions(message, position, messageIndex) {
+    const alternatives = message.tokenSequence[position];
+    if (!alternatives) return;
 
 	const modalContent = document.getElementById("token-options");
 	modalContent.innerHTML = "";
@@ -154,10 +177,10 @@ function showTokenOptions(message, position) {
 	alternatives
 		.sort((a, b) => b[1] - a[1])
 		.forEach(([token, prob, isChosen]) => {
-			const optionDiv = createTokenOption(token, prob, isChosen);
-			optionDiv.onclick = () => replaceToken(message, position, token);
-			modalContent.appendChild(optionDiv);
-		});
+            const optionDiv = createTokenOption(token, prob, isChosen);
+            optionDiv.onclick = () => replaceToken(messageIndex, message, position, token);
+            modalContent.appendChild(optionDiv);
+        });
 
 	showModal("token-modal");
 }
@@ -168,7 +191,19 @@ function createTokenOption(token, prob, isChosen) {
 
 	const tokenSpan = document.createElement("span");
 	tokenSpan.className = "token-text";
-	tokenSpan.textContent = token;
+	const metadata = getTokenVisualMetadata(token);
+	if (metadata.isInvisible) {
+		tokenSpan.classList.add("token-text-empty");
+		tokenSpan.textContent = metadata.placeholder;
+		if (metadata.ariaLabel) {
+			tokenSpan.setAttribute("aria-label", metadata.ariaLabel);
+		}
+	} else {
+		tokenSpan.textContent = token;
+	}
+	if (metadata.isEnd) {
+		tokenSpan.classList.add("token-text-end");
+	}
 
 	const probSpan = document.createElement("span");
 	probSpan.className = "token-prob";
@@ -181,10 +216,16 @@ function createTokenOption(token, prob, isChosen) {
 	return optionDiv;
 }
 
-async function replaceToken(message, position, token) {
+async function replaceToken(messageIndex, message, position, token) {
 	// Delete all messages after the current one
-	state.chatHistory = state.chatHistory.slice(0, message.id + 1);
-	message.partial = true;
+	state.chatHistory = state.chatHistory.slice(0, messageIndex + 1);
+	
+	// Check if the selected token is an end token
+	const metadata = getTokenVisualMetadata(token);
+	const isEndToken = metadata.isEnd;
+	
+	// If it's an end token, mark message as complete; otherwise keep it partial
+	message.partial = !isEndToken;
 	message.chosenTokens = message.chosenTokens
 		.slice(0, position)
 		.concat([
@@ -197,14 +238,21 @@ async function replaceToken(message, position, token) {
 			message.tokenSequence[position].map(([t, p, c]) => [t, p, t === token]),
 		]);
 
-	const settings = {
-		chat_history: state.chatHistory,
-		mode: "chat",
-		...getGenerationSettings(),
-	};
-	document.getElementById("token-modal").style.display = "none";
-	resetTokenMetrics();
-	await generateText(settings);
+	// Only continue generation if the token is not an end token
+	if (!isEndToken) {
+		const settings = {
+			chat_history: state.chatHistory,
+			mode: "chat",
+			...getGenerationSettings(),
+		};
+		document.getElementById("token-modal").style.display = "none";
+		resetTokenMetrics();
+		await generateText(settings);
+	} else {
+		// Just close the modal and update the display
+		document.getElementById("token-modal").style.display = "none";
+		updateChatDisplay();
+	}
 }
 
 function getGenerationSettings() {

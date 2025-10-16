@@ -1,6 +1,6 @@
 import { state, resetTokenMetrics } from "./state.js";
 import { generateText } from "./socket.js";
-import { createTokenSpan, showModal, getProbabilityColor } from "./utils.js";
+import { createTokenSpan, showModal, getProbabilityColor, getTokenVisualMetadata } from "./utils.js";
 
 export function initializeCompletionHandlers() {
 	const completionDisplay = document.getElementById("completion-display");
@@ -37,21 +37,38 @@ export function updateCompletionDisplay(chosen, options) {
 
 	const [token, prob, _] = chosenToken;
 
-	token.split("\n").forEach((tokenText, i) => {
-		if (i > 0) {
-			completionDisplay.appendChild(document.createElement("br"));
-		}
-
+	// Check if token contains newlines
+	if (token.includes("\n")) {
+		const parts = token.split("\n");
+		parts.forEach((part, i) => {
+			if (i > 0) {
+				completionDisplay.appendChild(document.createElement("br"));
+			}
+			if (part.length > 0 || i === 0) {
+				const tokenSpan = createTokenSpan(
+					part,
+					prob,
+					undefined,
+					undefined,
+					() => showCompletionTokenOptions(tokenId, tokenSpan),
+					token
+				);
+				tokenSpan.setAttribute("data-token-id", tokenId);
+				completionDisplay.appendChild(tokenSpan);
+			}
+		});
+	} else {
 		const tokenSpan = createTokenSpan(
-			tokenText,
+			token,
 			prob,
 			undefined,
 			undefined,
-			() => showCompletionTokenOptions(tokenId, tokenSpan)
+			() => showCompletionTokenOptions(tokenId, tokenSpan),
+			token
 		);
 		tokenSpan.setAttribute("data-token-id", tokenId);
 		completionDisplay.appendChild(tokenSpan);
-	});
+	}
 }
 
 function showCompletionTokenOptions(tokenId, tokenSpan) {
@@ -78,7 +95,19 @@ function createCompletionTokenOption(token, prob, isChosen) {
 
 	const tokenSpan = document.createElement("span");
 	tokenSpan.className = "token-text";
-	tokenSpan.textContent = token;
+	const metadata = getTokenVisualMetadata(token);
+	if (metadata.isInvisible) {
+		tokenSpan.classList.add("token-text-empty");
+		tokenSpan.textContent = metadata.placeholder;
+		if (metadata.ariaLabel) {
+			tokenSpan.setAttribute("aria-label", metadata.ariaLabel);
+		}
+	} else {
+		tokenSpan.textContent = token;
+	}
+	if (metadata.isEnd) {
+		tokenSpan.classList.add("token-text-end");
+	}
 
 	const probSpan = document.createElement("span");
 	probSpan.className = "token-prob";

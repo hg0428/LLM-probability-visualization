@@ -9,6 +9,18 @@ import random
 
 sequence_breaker_strings = ["\n", ":", '"', "*"]
 
+# Map model formats to their end-of-message tokens
+END_TOKEN_MAP = {
+    "chatml": "<|im_end|>",
+    "llama3": "<|eot_id|>",
+    "harmony": "<|end|>",
+    "llama2": "</s>",
+    "gemma2": "<end_of_turn>",
+    "granite3": "<|end_of_text|>",
+    "qwen3": "<|im_end|>",
+    "gpt-oss": "<|end|>",
+}
+
 
 def calculate_dry_penalty(
     input_ids: torch.LongTensor,
@@ -253,13 +265,19 @@ def generate_text(
             alternatives = []
             for prob, idx in zip(num_show_probs, num_show_indices):
                 token = model.detokenize([idx.item()])
+                # Check if this is an EOS token and use the proper end token text
+                if idx.item() == model.eos_token_id and model_format in END_TOKEN_MAP:
+                    token = END_TOKEN_MAP[model_format]
                 alternatives.append(
                     [token, float(prob.item()), idx.item() == next_token.item()]
                 )
             chosen_token_detokenized = model.detokenize([next_token.item()])
+            # Check if chosen token is EOS and use proper end token text
+            if next_token.item() == model.eos_token_id and model_format in END_TOKEN_MAP:
+                chosen_token_detokenized = END_TOKEN_MAP[model_format]
             generated_text += chosen_token_detokenized
             alternatives.append(
-                [chosen_token_detokenized, probs[0][next_token.item()], True]
+                [chosen_token_detokenized, probs[0][next_token.item()].item(), True]
             )
             # Remove duplicates
             alternatives = [
@@ -275,19 +293,30 @@ def generate_text(
                 allow_name,
             )
             if end == True:
-                if stashed:
-                    yield stashed[0]
+                # For chatter, the detected tokens belong to the next message header, do not yield
+                if model_format != "chatter":
+                    # Safe to yield for non-chatter formats (e.g., ChatML, Llama3, Harmony)
+                    # Stashed should be empty for these, but guard anyway
+                    if stashed:
+                        for token_value, alt in stashed:
+                            yield token_value, alt
+                        stashed.clear()
+                    yield chosen_token_detokenized, alternatives
+                    if alternatives:
+                        sequence_alternatives.append(alternatives)
                 break
             elif end == False:
                 if stashed:
-                    for token, alternatives in stashed:
-                        yield token, alternatives
+                    for token_value, alt in stashed:
+                        yield token_value, alt
                     stashed.clear()
                 yield chosen_token_detokenized, alternatives
+                if alternatives:
+                    sequence_alternatives.append(alternatives)
             elif end == None:
                 stashed.append((chosen_token_detokenized, alternatives))
-            if alternatives:
-                sequence_alternatives.append(alternatives)
+                if alternatives:
+                    sequence_alternatives.append(alternatives)
             # Update token frequencies
             if penalties_enabled and frequency_penalty > 0:
                 token_id = next_token.item()
@@ -299,7 +328,9 @@ def generate_text(
             current_tokens = torch.cat([next_token.unsqueeze(0).unsqueeze(0)], dim=1)
 
         if not sequence_alternatives:
-            raise ValueError("No valid token alternatives generated")
+            # This can happen if we detect end-of-message on the first token (e.g., Chatter format)
+            # Return empty list instead of raising error
+            return []
 
         return sequence_alternatives
 
