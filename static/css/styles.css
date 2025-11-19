@@ -289,14 +289,11 @@ button:hover {
 	border-radius: 24px;
 	border: 1px solid rgba(203, 213, 225, 0.6);
 	backdrop-filter: blur(18px);
+	overflow: hidden; /* clip inner scroll to rounded container */
 }
 
 .settings-container.closed {
 	width: 0 !important;
-}
-
-.settings-container.closed .settings-panel {
-	display: none;
 }
 
 .resize-handle {
@@ -346,6 +343,7 @@ button:hover {
 	padding: 28px;
 	padding-top: 24px;
 	background: transparent;
+	min-height: 0; /* allow flex child to shrink and scroll instead of overflowing */
 }
 
 .settings-container.closed .settings-panel {
